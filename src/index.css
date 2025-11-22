@@ -4,10 +4,17 @@
 
 :root {
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #0f172a;
+  background-color: #f8fafc;
+}
+
+html.dark {
   color: #f8fafc;
   background-color: #020617;
 }
 
 body {
   min-height: 100vh;
+  background-color: inherit;
+  color: inherit;
 }
