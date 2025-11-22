@@ -22,6 +22,7 @@ No backend, no server process. Everything runs as static HTML/CSS/JS in the brow
 - Dark theme applies the Tailwind `dark` class on `<html>` and uses `from-slate-950 via-slate-900 to indigo-950` gradients with glassmorphism cards.
 - Utility classes keep widgets compact (e.g., `rounded-2xl`, `backdrop-blur`, `border-white/10`) while remaining responsive with flex/grid layouts.
 - Quick links default to 8 tiles with a “Show more” toggle; metrics in the GitLab card are clickable and use accent hover states.
+- Current layout: hero header (greeting + weather toggle) → merged search/link widget → GitLab focus card (full-width) optimized for a 14" MacBook Pro viewport.
 
 ## Output
 - `dist/` contains only `index.html`, `*.js`, and `*.css`.
