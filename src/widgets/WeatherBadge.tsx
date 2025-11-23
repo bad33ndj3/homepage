@@ -78,12 +78,19 @@ function getWeatherDescription(code: number | null | undefined) {
   );
 }
 
+type StaticWeatherLocation = {
+  latitude: number;
+  longitude: number;
+  label?: string | null;
+};
+
 type WeatherBadgeProps = {
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   onSummaryChange?: (summary: WeatherSummary | null) => void;
   className?: string;
   timeZone: string;
+  staticLocation?: StaticWeatherLocation | null;
 };
 
 export type WeatherSummary = {
@@ -98,7 +105,8 @@ export function WeatherBadge({
   onExpandedChange,
   onSummaryChange,
   className,
-  timeZone
+  timeZone,
+  staticLocation
 }: WeatherBadgeProps) {
   const [status, setStatus] = useState<Status>('idle');
   const [coords, setCoords] = useState<Coordinates | null>(null);
@@ -110,6 +118,18 @@ export function WeatherBadge({
   useEffect(() => {
     setShowDetails(expanded);
   }, [expanded]);
+
+  useEffect(() => {
+    if (staticLocation) {
+      setCoords({
+        latitude: staticLocation.latitude,
+        longitude: staticLocation.longitude
+      });
+      if (staticLocation.label) {
+        setLocationLabel(staticLocation.label);
+      }
+    }
+  }, [staticLocation]);
 
   const requestLocation = useCallback(() => {
     if (!('geolocation' in navigator)) {
@@ -135,8 +155,9 @@ export function WeatherBadge({
   }, []);
 
   useEffect(() => {
+    if (staticLocation) return;
     requestLocation();
-  }, [requestLocation]);
+  }, [requestLocation, staticLocation]);
 
   useEffect(() => {
     if (!coords) return;
@@ -177,8 +198,10 @@ export function WeatherBadge({
           daily: buildDailySummary(weatherJson?.daily)
         });
 
+        const configuredLabel = staticLocation?.label?.trim();
         setLocationLabel(
-          reverseJson?.city ||
+          configuredLabel ||
+            reverseJson?.city ||
             reverseJson?.locality ||
             reverseJson?.principalSubdivision ||
             reverseJson?.countryName ||
@@ -198,7 +221,7 @@ export function WeatherBadge({
     return () => {
       cancelled = true;
     };
-  }, [coords, timeZone]);
+  }, [coords, timeZone, staticLocation]);
 
   const details = useMemo(() => getWeatherDescription(weather?.code ?? undefined), [weather?.code]);
   const showContent = status === 'ready' && weather;

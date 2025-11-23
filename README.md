@@ -18,8 +18,8 @@ pnpm build      # emits dist/ for file:// or static hosting
 
 Minimal config:
 - `.env` from `.env.example` and add `VITE_GITLAB_TOKEN` (optional `VITE_GITLAB_NAMESPACE`).
-- `src/config/links.json`: edit bookmarks; add `"category": "Work"` to make a tab.
-- `src/config/personalization.json`: set `displayName` for the greeting (also editable in Settings ⚙️).
+- `cp src/config/links.example.json src/config/links.local.json` then edit bookmarks; add `"category": "Work"` to make a tab. `.local` is gitignored so your links stay private.
+- `cp src/config/personalization.example.json src/config/personalization.local.json` and set `displayName` or `weatherLocation` (lat/lon + label) if you prefer a fixed forecast without geolocation; Settings ⚙️ still lets you adjust the name and weather detail toggle.
 
 For a fully self-contained `file://` build, run:
 ```bash

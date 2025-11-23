@@ -1,0 +1,11 @@
+[
+  { "label": "GitLab", "description": "Merge requests & pipelines", "url": "https://gitlab.com/", "category": "Work" },
+  { "label": "Jira", "description": "Boards & sprints", "url": "https://jira.example.com/", "category": "Work" },
+  { "label": "Tweakers", "description": "Tech news", "url": "https://tweakers.net/", "category": "News" },
+  { "label": "NU.nl", "description": "Dutch news", "url": "https://www.nu.nl/", "category": "News" },
+  { "label": "ChatGPT", "description": "AI assistant", "url": "https://chat.openai.com/", "category": "Personal" },
+  { "label": "YNAB", "description": "Budgeting", "url": "https://app.ynab.com/", "category": "Personal" },
+  { "label": "Gmail", "description": "Personal email", "url": "https://mail.google.com/", "category": "Personal" },
+  { "label": "Outlook", "description": "Work email", "url": "https://outlook.com/", "category": "Work" },
+  { "label": "Home Assistant", "description": "Smart home", "url": "https://home.example.com/", "category": "Personal" }
+]

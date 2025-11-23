@@ -17,7 +17,15 @@ const css = fs.readFileSync(path.join(distDir, cssHref), 'utf8');
 const js = fs.readFileSync(path.join(distDir, jsSrc), 'utf8');
 
 const jsBase64 = Buffer.from(js, 'utf8').toString('base64');
-const jsLoader = `<script type="module">(function(b){const u=URL.createObjectURL(new Blob([atob(b)],{type:'text/javascript'}));import(u);})('${jsBase64}');</script>`;
+const jsLoader =
+  `<script type="module">(function(b){` +
+  `const bin=atob(b);` +
+  `const len=bin.length;` +
+  `const bytes=new Uint8Array(len);` +
+  `for(let i=0;i<len;i++){bytes[i]=bin.charCodeAt(i);}` +
+  `const u=URL.createObjectURL(new Blob([bytes],{type:'text/javascript;charset=utf-8'}));` +
+  `import(u);` +
+  `})('${jsBase64}');</script>`;
 
 const inlined = html
   .replace(/<link rel="stylesheet"[^>]*href="[^"]+"[^>]*>\s*/i, `<style>${css}</style>`)

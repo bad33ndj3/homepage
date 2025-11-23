@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import linksConfig from '../config/links.json';
+import linksConfig, { type LinkConfig } from '../config/links';
 
 const providers = [
   { label: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
@@ -17,14 +17,7 @@ const providers = [
   { label: 'Perplexity', url: 'https://www.perplexity.ai/search?q=' }
 ];
 
-type LinkConfig = {
-  label: string;
-  description: string;
-  url: string;
-  category?: string;
-};
-
-const favoriteLinks: LinkConfig[] = linksConfig as LinkConfig[];
+const favoriteLinks: LinkConfig[] = linksConfig;
 
 type SearchBarProps = {
   autoFocus?: boolean;

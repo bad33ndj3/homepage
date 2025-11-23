@@ -16,14 +16,24 @@ import { StatusBoard, buildGitLabFilterUrl, type StatusHighlight } from './widge
 import { WeatherBadge, type WeatherSummary } from './widgets/WeatherBadge';
 import { SettingsModal } from './components/SettingsModal';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import linksConfig from './config/links.json';
-import personalizationConfig from './config/personalization.json';
+import linksConfig, { type LinkConfig } from './config/links';
+import personalizationConfig, { type WeatherLocationConfig } from './config/personalization';
 
 const SYSTEM_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
 const DEFAULT_DISPLAY_NAME =
   typeof personalizationConfig?.displayName === 'string' && personalizationConfig.displayName.trim()
     ? personalizationConfig.displayName.trim()
     : 'Casper';
+const CONFIGURED_WEATHER_LOCATION: WeatherLocationConfig | null =
+  personalizationConfig.weatherLocation &&
+  typeof personalizationConfig.weatherLocation.latitude === 'number' &&
+  typeof personalizationConfig.weatherLocation.longitude === 'number'
+    ? {
+        latitude: personalizationConfig.weatherLocation.latitude,
+        longitude: personalizationConfig.weatherLocation.longitude,
+        label: personalizationConfig.weatherLocation.label
+      }
+    : null;
 const PRESET_TIME_ZONES = Array.from(
   new Set([
     SYSTEM_TIME_ZONE,
@@ -68,25 +78,35 @@ function App() {
 
   const [greeting, setGreeting] = useState(() => getGreeting(new Date(), resolvedTimeZone));
   const [dateLabel, setDateLabel] = useState(() => formatDate(new Date(), resolvedTimeZone));
-  const [timeLabel, setTimeLabel] = useState(() => formatTimeOfDay(new Date(), resolvedTimeZone));
+  const [clock, setClock] = useState(() => new Date());
+  const [secondsTick, setSecondsTick] = useState(0);
+  const [minuteTick, setMinuteTick] = useState(0);
   const weatherSectionRef = useRef<HTMLDivElement>(null);
-  const favorites: LinkConfig[] = (linksConfig as LinkConfig[]).map((link) => ({
+  const favorites: LinkConfig[] = linksConfig.map((link) => ({
     ...link,
     category: link.category ?? defaultCategoryByLabel[link.label] ?? 'General'
   }));
+
+  const minuteKeyRef = useRef<string>('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const update = () => {
       const now = new Date();
+      setClock(now);
       setGreeting(getGreeting(now, resolvedTimeZone));
       setDateLabel(formatDate(now, resolvedTimeZone));
-      setTimeLabel(formatTimeOfDay(now, resolvedTimeZone));
+      const minuteKey = formatMinuteKey(now, resolvedTimeZone);
+      if (minuteKeyRef.current && minuteKeyRef.current !== minuteKey) {
+        setMinuteTick((tick) => tick + 1);
+      }
+      minuteKeyRef.current = minuteKey;
+      setSecondsTick((tick) => tick + 1);
     };
 
     update();
-    const id = window.setInterval(update, 60_000);
+    const id = window.setInterval(update, 1000);
     return () => window.clearInterval(id);
   }, [resolvedTimeZone]);
 
@@ -119,58 +139,73 @@ function App() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  const timeParts = useMemo(() => getTimeParts(clock, resolvedTimeZone), [clock, resolvedTimeZone]);
+  const secondsValue = Number(timeParts.secondsValue ?? 0);
+  const secondsPulse = secondsTick % 2 === 0;
+  const minuteShift = minuteTick % 2 === 0;
+  const weatherLocationLabel =
+    weatherSummary?.location ?? CONFIGURED_WEATHER_LOCATION?.label ?? 'Your area';
+  const weatherTemperatureLabel = weatherSummary?.temperature ?? '—°';
+  const weatherSecondaryLine = weatherSummary?.description ?? 'Forecast loading…';
+  const weatherTertiaryLine = weatherSummary?.description
+    ? 'Tap to expand detailed view'
+    : 'Tap to allow location or configure coordinates';
+  const weatherIcon = weatherSummary?.icon ?? '⛅️';
+  const greetingName = displayName?.trim() || DEFAULT_DISPLAY_NAME;
+
   const handleWeatherPillClick = () => {
     setDetailedWeather(true);
     weatherSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const topBar = (
-    <header className="flex flex-col gap-3 rounded-[14px] border border-[#E2E8F0] bg-white/70 px-4 py-3 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-colors dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:shadow-[0_16px_40px_rgba(0,0,0,0.32)] sm:flex-row sm:items-center sm:justify-between">
-      <div className="space-y-2 text-center sm:text-left">
-        <div className="flex flex-col items-center gap-1 text-[#3A7AFE] sm:items-start sm:gap-2">
-          <span className="text-[11px] uppercase tracking-[0.35em] text-slate-500 dark:text-slate-300">{dateLabel}</span>
-          <span className="text-4xl font-semibold leading-none tracking-tight text-[#0F172A] dark:text-[#F1F5F9]">
-            {timeLabel}
-          </span>
+    <header className="rounded-[14px] border border-[#E2E8F0] bg-white/70 px-5 py-5 shadow-[0_20px_45px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-colors dark:border-[#4B5563] dark:bg-[#1E293B]/60 dark:shadow-[0_26px_50px_rgba(0,0,0,0.4)]">
+      <div className="grid gap-6 text-center sm:grid-cols-3 sm:text-left">
+        <div className="flex flex-col items-center text-left sm:items-start">
+          <p className="text-lg font-medium text-[#0F172A] dark:text-[#F1F5F9]">
+            Hi {greetingName}
+            <span className="ml-2 text-sm text-slate-500 dark:text-slate-300">{greeting}</span>
+          </p>
+          <p className="text-sm uppercase tracking-[0.35em] text-slate-500 dark:text-slate-400">
+            {dateLabel}
+          </p>
         </div>
-        <p className="text-sm font-semibold text-[#0F172A] dark:text-[#F1F5F9]">
-          Hi {displayName?.trim() || DEFAULT_DISPLAY_NAME}, {greeting}
-        </p>
-      </div>
-      <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="flex flex-col items-center justify-center text-center sm:items-center">
+          <div className="relative flex items-baseline justify-center gap-3 font-mono text-[clamp(3rem,10vw,6rem)] leading-none tracking-tight text-[#0F172A] dark:text-[#F1F5F9]">
+            <span
+              className={`transition-transform duration-150 ease-linear ${
+                minuteShift ? 'translate-y-0' : '-translate-y-1'
+              }`}
+            >
+              {timeParts.hoursMinutes}
+            </span>
+            <span
+              className={`text-[clamp(1.5rem,4vw,2.5rem)] text-slate-500 transition-all duration-150 ease-linear ${
+                secondsPulse ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-60'
+              }`}
+            >
+              {timeParts.seconds}
+            </span>
+          </div>
+        </div>
         <button
           type="button"
           onClick={handleWeatherPillClick}
-          className="flex min-w-[220px] items-center gap-3 rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-2 text-left shadow-[0_12px_35px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:shadow-[0_14px_32px_rgba(0,0,0,0.3)]"
+          className="flex flex-col items-center gap-2 rounded-[16px] border border-white/40 bg-white/70 px-4 py-3 text-right shadow-[0_14px_30px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-white/20 dark:bg-white/10 dark:text-[#F1F5F9] dark:shadow-[0_18px_36px_rgba(0,0,0,0.35)] sm:items-end"
         >
-          <span className="text-xl" role="img" aria-hidden="true">
-            {weatherSummary?.icon ?? '⛅️'}
-          </span>
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.28em] text-slate-500 dark:text-white/60">
-              Weather
-            </p>
-            <p className="truncate text-sm font-semibold text-[#0F172A] dark:text-[#F1F5F9]">
-              {weatherSummary
-                ? `${weatherSummary.location} · ${weatherSummary.temperature}`
-                : 'Loading forecast…'}
-            </p>
-            <p className="truncate text-xs text-slate-500 dark:text-white/70">
-              {weatherSummary?.description ?? 'Tap for details'}
+          <div className="flex items-center gap-2 text-[#0F172A] dark:text-[#F1F5F9]">
+            <span className="text-xl" role="img" aria-hidden="true">
+              {weatherIcon}
+            </span>
+            <p className="text-sm font-semibold">
+              {weatherLocationLabel} · {weatherTemperatureLabel}
             </p>
           </div>
+          <p className="text-xs text-slate-500 dark:text-slate-300">{weatherSecondaryLine}</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+            {weatherTertiaryLine}
+          </p>
         </button>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => setSettingsOpen(true)}
-          aria-label="Open settings"
-          title="Open settings"
-          className="h-9 w-9 rounded-[10px] border-[#E2E8F0] bg-white/70 text-lg text-[#0F172A] shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:text-[#F1F5F9] dark:shadow-[0_12px_28px_rgba(0,0,0,0.28)]"
-        >
-          ⚙️
-        </Button>
       </div>
     </header>
   );
@@ -259,9 +294,21 @@ function App() {
                 onSummaryChange={setWeatherSummary}
                 className="h-full"
                 timeZone={resolvedTimeZone}
+                staticLocation={CONFIGURED_WEATHER_LOCATION}
               />
             </div>
             <BookmarksCard links={favorites} />
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSettingsOpen(true)}
+                className="rounded-full border-[#E2E8F0] bg-white/80 px-4 py-2 text-sm text-[#0F172A] shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/60 dark:text-[#F1F5F9]"
+              >
+                Settings
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -371,13 +418,6 @@ function App() {
 
 export default App;
 
-type LinkConfig = {
-  label: string;
-  description: string;
-  url: string;
-  category?: string;
-};
-
 const defaultCategoryByLabel: Record<string, string> = {
   YNAB: 'Personal',
   ChatGPT: 'Personal',
@@ -440,7 +480,7 @@ function BookmarksCard({ links }: { links: LinkConfig[] }) {
         ))}
         {!activeLinks.length && (
           <p className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-xs text-slate-500 dark:border-white/10 dark:text-slate-300">
-            Add more {tab.toLowerCase()} bookmarks in config/links.json (set "category").
+            Add more {tab.toLowerCase()} bookmarks in config/links.local.json (set "category").
           </p>
         )}
       </CardContent>
@@ -474,10 +514,31 @@ function formatDate(date: Date, timeZone: string) {
   }).format(date);
 }
 
-function formatTimeOfDay(date: Date, timeZone: string) {
-  return new Intl.DateTimeFormat('en-US', {
-    hour: 'numeric',
+function formatMinuteKey(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
     timeZone
-  }).format(date);
+  });
+  return formatter.format(date);
+}
+
+function getTimeParts(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZone
+  });
+  const parts = formatter.formatToParts(date);
+  const hour = parts.find((part) => part.type === 'hour')?.value ?? '00';
+  const minute = parts.find((part) => part.type === 'minute')?.value ?? '00';
+  const seconds = parts.find((part) => part.type === 'second')?.value ?? '00';
+  return {
+    hoursMinutes: `${hour}:${minute}`,
+    seconds,
+    secondsValue: Number(seconds)
+  };
 }

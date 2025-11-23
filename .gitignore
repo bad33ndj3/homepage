@@ -3,3 +3,5 @@ node_modules
 dist
 .vite
 .env
+src/config/links.local.json
+src/config/personalization.local.json
