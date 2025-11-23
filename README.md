@@ -2,6 +2,8 @@
 
 Futuristic, zero-backend homepage: instant load, glassmorphism, dark/light, and a command palette that finds bookmarks, merge requests, weather actions, or jumps to web search. Everything is static—works via `file://` or any static host.
 
+![Homepage Screenshot](screenshot.png)
+
 ## Why you’ll like it
 - Cmd/Ctrl+K or `/` to command everything (bookmarks, GitLab MRs, weather, web search).
 - GitLab focus: stale/conflict/pipeline metrics plus expandable MR details.
