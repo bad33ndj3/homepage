@@ -20,6 +20,13 @@ type StatusHighlight = {
   url?: string;
   meta: string;
   badge?: string;
+  tags?: string[];
+  updatedAt?: string;
+  sourceBranch?: string;
+  targetBranch?: string;
+  pipelineStatus?: string;
+  isStale?: boolean;
+  hasConflicts?: boolean;
 };
 
 export type RemoteStatus = {
@@ -135,63 +142,100 @@ export function StatusBoard() {
   }, []);
 
   return (
-    <Card className="overflow-hidden border border-white/40 bg-white/80 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-black/30">
-      <CardHeader className="space-y-1">
-        <CardTitle>GitLab Focus</CardTitle>
-        <CardDescription>Assigned MRs at a glance: stale work, pipeline health, recent pushes.</CardDescription>
+    <Card className="overflow-hidden border border-white/40 bg-white/85 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-black/30">
+      <CardHeader className="space-y-1 pb-3">
+        <CardTitle className="text-lg">GitLab Focus</CardTitle>
+        <CardDescription className="text-xs">
+          Above-the-fold focus on your open merge requests: stale work, conflicts, pipelines.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         {statuses.map((status) => (
-          <section key={status.id} className="space-y-4">
+          <section key={status.id} className="space-y-3">
             {!status.headers && status.envVar && (
               <p className="rounded-xl border border-dashed border-amber-200 px-3 py-2 text-xs text-amber-600 dark:border-amber-300/40 dark:text-amber-300">
                 Add {status.envVar} to your .env file to enable live data.
               </p>
             )}
 
-            <div className="grid gap-3 lg:grid-cols-4">
+            <div className="flex flex-wrap gap-2 text-sm">
               {status.items.map((item) => (
                 <a
                   key={item.id}
                   href={item.href}
                   target={item.href ? '_blank' : undefined}
                   rel={item.href ? 'noreferrer' : undefined}
-                  className="rounded-2xl border border-white/40 bg-white/90 px-3 py-3 text-center shadow-sm transition hover:border-accent hover:text-accent dark:border-white/10 dark:bg-white/10"
+                  className="inline-flex min-w-[140px] flex-1 items-center justify-between gap-3 rounded-2xl border border-white/50 bg-white/90 px-3 py-2 text-left shadow-sm transition hover:border-accent hover:text-accent dark:border-white/10 dark:bg-white/10"
                 >
-                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">{item.label}</dt>
-                  <dd className="text-2xl font-semibold text-slate-900 dark:text-white">{item.value}</dd>
+                  <div>
+                    <dt className="text-[11px] uppercase tracking-wide text-slate-400">{item.label}</dt>
+                    <dd className="text-lg font-semibold text-slate-900 dark:text-white">{item.value}</dd>
+                  </div>
+                  <span aria-hidden="true">↗</span>
                 </a>
               ))}
             </div>
 
             {!!status.highlights?.length && (
-              <div className="grid gap-3 lg:grid-cols-3">
+              <div className="space-y-2">
                 {status.highlights.map((highlight) => (
                   <a
                     key={`${highlight.title}-${highlight.url ?? 'local'}`}
                     href={highlight.url}
                     target={highlight.url ? '_blank' : undefined}
                     rel={highlight.url ? 'noreferrer' : undefined}
-                    className="flex flex-col gap-1 rounded-2xl border border-white/40 bg-white/80 px-3 py-3 text-left text-sm text-slate-900 shadow-sm transition hover:border-accent hover:text-accent dark:border-white/10 dark:bg-white/10 dark:text-white"
+                    className="flex flex-col gap-1 rounded-2xl border border-white/40 bg-white/90 px-3 py-3 text-left text-sm text-slate-900 shadow-sm transition hover:border-accent hover:text-accent dark:border-white/10 dark:bg-white/10 dark:text-white"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-medium line-clamp-2">{highlight.title}</p>
-                      {highlight.badge && (
-                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-200">
-                          {highlight.badge}
-                        </Badge>
-                      )}
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="line-clamp-1 font-semibold">{highlight.title}</p>
+                      <div className="flex flex-wrap items-center gap-1">
+                        {highlight.tags?.map((tag) => (
+                          <Badge
+                            key={`${highlight.title}-${tag}`}
+                            variant="secondary"
+                            className={getTagClass(tag)}
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                        {!highlight.tags?.length && highlight.badge && (
+                          <Badge
+                            variant="secondary"
+                            className="bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-200"
+                          >
+                            {highlight.badge}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-300">{highlight.meta}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-300">
+                      {highlight.meta}
+                    </p>
+                    {highlight.updatedAt && (
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                        Updated {formatRelativeTime(highlight.updatedAt)}
+                      </p>
+                    )}
                   </a>
                 ))}
               </div>
             )}
+
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-300">
+              <span className={error ? 'text-rose-600 dark:text-rose-300' : undefined}>
+                {loading ? 'Loading live status…' : error ?? 'Latest assigned items'}
+              </span>
+              <a
+                href={buildGitLabFilterUrl({})}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 rounded-full border border-white/50 bg-white/80 px-3 py-1 font-semibold text-slate-700 transition hover:border-accent hover:text-accent dark:border-white/10 dark:bg-white/10 dark:text-white"
+              >
+                View all in GitLab ↗
+              </a>
+            </div>
           </section>
         ))}
-
-        {loading && <p className="text-sm text-slate-500 dark:text-slate-300">Loading live status…</p>}
-        {error && <p className="text-sm text-rose-500 dark:text-rose-300">{error}</p>}
       </CardContent>
     </Card>
   );
@@ -237,18 +281,31 @@ function buildGitLabInsights(mrs: GitLabMergeRequest[]) {
     .sort(
       (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
     )
-    .slice(0, 3)
+    .slice(0, 5)
     .map((mr) => ({
       title: mr.title,
       url: mr.web_url,
-      meta: `${mr.source_branch} → ${mr.target_branch} · updated ${formatRelativeTime(mr.updated_at)}`,
+      meta: `${mr.source_branch} → ${mr.target_branch}`,
       badge: mr.head_pipeline?.status === 'failed'
         ? 'Pipeline failed'
         : mr.merge_status === 'cannot_be_merged'
         ? 'Conflicts'
         : mr.draft || mr.work_in_progress
         ? 'Draft'
-        : undefined
+        : undefined,
+      tags: buildHighlightTags({
+        pipelineStatus: mr.head_pipeline?.status,
+        mergeStatus: mr.merge_status,
+        draft: mr.draft || mr.work_in_progress,
+        updatedAt: mr.updated_at,
+        staleThreshold
+      }),
+      updatedAt: mr.updated_at,
+      sourceBranch: mr.source_branch,
+      targetBranch: mr.target_branch,
+      pipelineStatus: mr.head_pipeline?.status,
+      isStale: new Date(mr.updated_at).getTime() < staleThreshold,
+      hasConflicts: mr.merge_status === 'cannot_be_merged'
     }));
 
   return { metrics, highlights };
@@ -262,6 +319,48 @@ function buildGitLabFilterUrl(params: GitLabFilterParams) {
     : 'https://gitlab.com/dashboard/merge_requests';
   const query = new URLSearchParams({ scope: 'assigned_to_me', state: 'opened', ...params });
   return `${base}?${query.toString()}`;
+}
+
+function buildHighlightTags({
+  pipelineStatus,
+  mergeStatus,
+  draft,
+  updatedAt,
+  staleThreshold
+}: {
+  pipelineStatus?: string;
+  mergeStatus?: string;
+  draft?: boolean;
+  updatedAt: string;
+  staleThreshold: number;
+}) {
+  const tags: string[] = [];
+  if (pipelineStatus === 'failed') tags.push('Pipeline');
+  if (mergeStatus === 'cannot_be_merged') tags.push('Conflicts');
+  if (draft) tags.push('Draft');
+
+  const updated = new Date(updatedAt).getTime();
+  if (!Number.isNaN(updated) && updated < staleThreshold) {
+    tags.push('Stale');
+  }
+  return tags;
+}
+
+function getTagClass(tag: string) {
+  const normalized = tag.toLowerCase();
+  if (normalized.includes('conflict')) {
+    return 'bg-rose-100 text-rose-800 dark:bg-rose-400/20 dark:text-rose-200';
+  }
+  if (normalized.includes('stale')) {
+    return 'bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-100';
+  }
+  if (normalized.includes('pipeline')) {
+    return 'bg-sky-100 text-sky-800 dark:bg-sky-400/20 dark:text-sky-100';
+  }
+  if (normalized.includes('draft')) {
+    return 'bg-slate-200 text-slate-800 dark:bg-white/10 dark:text-white';
+  }
+  return 'bg-white/80 text-slate-800 dark:bg-white/10 dark:text-white';
 }
 
 function normalizeCount(payload: unknown) {

@@ -69,57 +69,73 @@ export function SearchBar() {
   };
 
   return (
-    <Card className="border border-white/40 bg-white/80 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-black/30">
-      <CardHeader className="space-y-1">
-        <CardTitle>Search & Links</CardTitle>
-        <CardDescription>Filter quick links first, then jump to the web.</CardDescription>
+    <Card className="border border-white/40 bg-white/85 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-black/30">
+      <CardHeader className="space-y-1 pb-3">
+        <CardTitle className="text-lg">Search & Links</CardTitle>
+        <CardDescription className="text-xs">
+          Type to filter bookmarks; if nothing matches, jump to your search engine.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center"
+          className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
         >
-          <Select
-            value={engine.label}
-            onValueChange={(value) => {
-              const selected = providers.find((provider) => provider.label === value);
-              if (selected) setEngine(selected);
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue placeholder="Search provider" />
-            </SelectTrigger>
-            <SelectContent>
-              {providers.map((provider) => (
-                <SelectItem key={provider.label} value={provider.label}>
-                  {provider.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            ref={inputRef}
-            className="w-full flex-1"
-            placeholder={`Search ${engine.label}`}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          <Button type="submit" className="w-full sm:w-auto">
-            Open match
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full sm:w-auto"
-            onClick={handleWebSearch}
-          >
-            Web search
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <Select
+              value={engine.label}
+              onValueChange={(value) => {
+                const selected = providers.find((provider) => provider.label === value);
+                if (selected) setEngine(selected);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Search provider" />
+              </SelectTrigger>
+              <SelectContent>
+                {providers.map((provider) => (
+                  <SelectItem key={provider.label} value={provider.label}>
+                    {provider.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              ref={inputRef}
+              className="w-full flex-1 rounded-xl"
+              placeholder={`Search ${engine.label}`}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            <Button type="submit" className="w-full sm:w-[140px]">
+              Open match
+            </Button>
+          </div>
+          {normalizedQuery && filteredLinks.length === 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-start text-left text-sm text-slate-600 hover:text-accent dark:text-slate-200"
+              onClick={handleWebSearch}
+            >
+              Search {engine.label} for “{query}”
+            </Button>
+          )}
         </form>
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
-            {normalizedQuery ? `Matches (${filteredLinks.length})` : 'Pinned links'}
-          </p>
+          <div className="flex items-center justify-between text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            <p>{normalizedQuery ? `Matches (${filteredLinks.length})` : 'Pinned links'}</p>
+            {!normalizedQuery && filteredLinks.length > 8 && (
+              <button
+                type="button"
+                onClick={() => setShowAll((prev) => !prev)}
+                className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 transition hover:text-accent dark:text-slate-300"
+              >
+                {showAll ? 'Show less' : 'More'}
+                <span className={`text-base leading-none ${showAll ? 'rotate-180' : ''}`}>⌄</span>
+              </button>
+            )}
+          </div>
           <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
             {visibleLinks.map((link) => (
               <a
@@ -139,18 +155,6 @@ export function SearchBar() {
               </p>
             )}
           </div>
-          {!normalizedQuery && filteredLinks.length > 8 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAll((prev) => !prev)}
-              className="gap-1 text-xs text-slate-500 hover:text-accent dark:text-slate-300"
-            >
-              {showAll ? 'Show less' : 'Show more'}
-              <span className={`text-base leading-none ${showAll ? 'rotate-180' : ''}`}>⌄</span>
-            </Button>
-          )}
         </div>
       </CardContent>
     </Card>

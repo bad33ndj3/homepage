@@ -80,11 +80,25 @@ function getWeatherDescription(code: number | null | undefined) {
 type WeatherBadgeProps = {
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  onSummaryChange?: (summary: WeatherSummary | null) => void;
   className?: string;
   timeZone: string;
 };
 
-export function WeatherBadge({ expanded = false, onExpandedChange, className, timeZone }: WeatherBadgeProps) {
+export type WeatherSummary = {
+  location: string;
+  temperature: string;
+  description: string;
+  icon: string;
+};
+
+export function WeatherBadge({
+  expanded = false,
+  onExpandedChange,
+  onSummaryChange,
+  className,
+  timeZone
+}: WeatherBadgeProps) {
   const [status, setStatus] = useState<Status>('idle');
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [weather, setWeather] = useState<WeatherInfo | null>(null);
@@ -186,6 +200,22 @@ export function WeatherBadge({ expanded = false, onExpandedChange, className, ti
   const details = useMemo(() => getWeatherDescription(weather?.code ?? undefined), [weather?.code]);
   const showContent = status === 'ready' && weather;
 
+  useEffect(() => {
+    if (!onSummaryChange) return;
+
+    if (showContent && weather) {
+      onSummaryChange({
+        location: locationLabel,
+        temperature: formatTemperature(weather.temperature),
+        description: weather.nextRain ? `Rain around ${weather.nextRain}` : details.label,
+        icon: details.icon
+      });
+      return;
+    }
+
+    onSummaryChange(null);
+  }, [details.icon, details.label, locationLabel, onSummaryChange, showContent, weather]);
+
   const handleToggleDetails = () => {
     setShowDetails((prev) => {
       const next = !prev;
@@ -245,6 +275,23 @@ export function WeatherBadge({ expanded = false, onExpandedChange, className, ti
       ? `Rain around ${weather.nextRain}`
       : 'Skies stay dry for now'
     : 'Waiting for forecast…';
+  const keyEventLine = showContent
+    ? weather?.nextRain
+      ? `Rain around ${weather.nextRain} · Feels like ${formatTemperature(weather?.feelsLike)}`
+      : `Feels like ${formatTemperature(weather?.feelsLike)}`
+    : 'Awaiting forecast…';
+  const windHumidityLine = showContent
+    ? [
+        typeof weather?.windSpeed === 'number' && !Number.isNaN(weather.windSpeed)
+          ? `Wind ${Math.round(weather.windSpeed)} km/h`
+          : null,
+        typeof weather?.humidity === 'number' && !Number.isNaN(weather.humidity)
+          ? `Humidity ${Math.round(weather.humidity)}%`
+          : null
+      ]
+        .filter(Boolean)
+        .join(' · ') || null
+    : null;
 
   return (
     <Card
@@ -253,27 +300,15 @@ export function WeatherBadge({ expanded = false, onExpandedChange, className, ti
         className
       )}
     >
-      <CardHeader className="space-y-3 px-5 pt-5 pb-0 sm:px-6">
-        <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-slate-500 dark:text-white/60">
-          <span>Local weather</span>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={handleToggleDetails}
-            aria-pressed={showDetails}
-            className="h-8 rounded-full border-slate-200/60 bg-white/70 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-600 hover:border-accent hover:text-accent dark:border-white/30 dark:bg-white/10 dark:text-white"
-          >
-            {showDetails ? 'Hide detail' : 'Detailed view'}
-          </Button>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <CardTitle className="text-2xl font-semibold text-slate-900 dark:text-white">{locationLabel}</CardTitle>
-            <CardDescription className="text-sm text-slate-500 dark:text-white/70">{locationSubtitle}</CardDescription>
+      <CardHeader className="space-y-2 px-5 pt-5 pb-3 sm:px-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500 dark:text-white/60">Today</p>
+            <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">{locationLabel}</CardTitle>
+            <CardDescription className="text-xs text-slate-500 dark:text-white/70">{locationSubtitle}</CardDescription>
           </div>
           <div className="text-right">
-            <p className="text-4xl font-semibold leading-none text-slate-900 dark:text-white sm:text-5xl">
+            <p className="text-3xl font-semibold leading-none text-slate-900 dark:text-white sm:text-4xl">
               {showContent ? formatTemperature(weather?.temperature) : '—'}
             </p>
             <p className="text-sm text-slate-500 dark:text-white/80">
@@ -283,7 +318,7 @@ export function WeatherBadge({ expanded = false, onExpandedChange, className, ti
               {details.label}
             </p>
             {showContent && (
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-white/60">
+              <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400 dark:text-white/60">
                 {weather?.isDay ? 'Daytime' : 'Night'}
               </p>
             )}
@@ -293,6 +328,23 @@ export function WeatherBadge({ expanded = false, onExpandedChange, className, ti
       <CardContent className="space-y-5 px-5 pb-5 sm:px-6">
         {showContent ? (
           <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-1 text-sm text-slate-600 dark:text-white/80">
+                <p>{keyEventLine}</p>
+                {windHumidityLine && <p className="text-xs text-slate-500 dark:text-white/70">{windHumidityLine}</p>}
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleToggleDetails}
+                aria-pressed={showDetails}
+                className="h-8 rounded-full border-slate-200/60 bg-white/70 px-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 hover:border-accent hover:text-accent dark:border-white/30 dark:bg-white/10 dark:text-white"
+              >
+                Details {showDetails ? '▴' : '▾'}
+              </Button>
+            </div>
+
             <div className="flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-white/70">
               {quickStats.length === 0 ? (
                 <span className="text-slate-400 dark:text-white/60">Pulling forecast…</span>
