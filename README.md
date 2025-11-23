@@ -1,27 +1,30 @@
 # Homebase
 
-A zero-backend, glassy dashboard built with Vite + React + Tailwind. Widgets live entirely on the client:
+Futuristic, zero-backend homepage: instant load, glassmorphism, dark/light, and a command palette that finds bookmarks, merge requests, weather actions, or jumps to web search. Everything is static—works via `file://` or any static host.
 
-- Command Palette (⌘/Ctrl+K or `/`): search bookmarks, merge requests, weather commands, and fall back to web search.
-- DuckDuckGo-first search form with selectable engines.
-- GitLab focus card (client-side API calls; paste your PAT to fetch live counts, conflicts, stale MRs).
-- Weather card with optional detailed view and rain alerts.
-- Bookmarks grid with category tabs (edit `src/config/links.json`, add `"category"` to group tabs).
+## Why you’ll like it
+- Cmd/Ctrl+K or `/` to command everything (bookmarks, GitLab MRs, weather, web search).
+- GitLab focus: stale/conflict/pipeline metrics plus expandable MR details.
+- Weather: quick summary, rain alerts <1h, optional detailed view.
+- Bookmarks with category tabs (work/personal/news, etc.).
+- No server. Pure Vite + React + Tailwind output in `dist/`.
 
-## Getting Started
-
+## Fast setup
 ```bash
-pnpm install # or npm install / yarn
-pnpm dev     # runs Vite on http://localhost:5173
-pnpm build   # outputs static assets into dist/
+pnpm install    # or npm install / yarn
+pnpm dev        # http://localhost:5173
+pnpm build      # emits dist/ for file:// or static hosting
 ```
 
-Drop the `dist/` folder on any static host or run it locally via `file://`.
+Minimal config:
+- `.env` from `.env.example` and add `VITE_GITLAB_TOKEN` (optional `VITE_GITLAB_NAMESPACE`).
+- `src/config/links.json`: edit bookmarks; add `"category": "Work"` to make a tab.
+- `src/config/personalization.json`: set `displayName` for the greeting (also editable in Settings ⚙️).
 
-## Configuration
+For a fully self-contained `file://` build, run:
+```bash
+npm run build:inline
+```
+This inlines CSS/JS into `dist/index.html` so you can double-click it without a server. Otherwise, use `pnpm build` and serve `dist/` with any static host.
 
-- Duplicate `.env.example` into `.env` and add your GitLab API token. Optional: set `VITE_GITLAB_NAMESPACE` so filtered metric links open directly in your workspace. Vite exposes variables prefixed with `VITE_`.
-- Update `src/config/links.json` to customize bookmarks. Add `"category": "Work"` (or any label) to have it appear as a tab in the Bookmarks card.
-- Set your default greeting name in `src/config/personalization.json` (`displayName`), then adjust it live in Settings (⚙️).
-- In Settings (⚙️), set your display name for the greeting and toggle detailed weather.
-- Command Palette pulls: bookmarks, GitLab merge requests (top highlights), weather commands, and web-search fallback.
+That’s it—open the page and hit Cmd/Ctrl+K.
