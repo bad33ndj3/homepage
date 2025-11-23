@@ -13,9 +13,8 @@ Futuristic, zero-backend homepage: instant load, glassmorphism, dark/light, and 
 
 ## Fast setup
 ```bash
-pnpm install    # or npm install / yarn
-pnpm dev        # http://localhost:5173
-pnpm build      # emits dist/ for file:// or static hosting
+pnpm install          # or npm install / yarn
+pnpm dev              # http://localhost:5173
 ```
 
 Minimal config:
