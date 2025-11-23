@@ -18,6 +18,7 @@ pnpm build      # emits dist/ for file:// or static hosting
 
 Minimal config:
 - `.env` from `.env.example` and add `VITE_GITLAB_TOKEN` (optional `VITE_GITLAB_NAMESPACE`).
+- Add `VITE_GITLAB_USERNAME` to target your own merge requests in the GitLab widget/links.
 - `cp src/config/links.example.json src/config/links.local.json` then edit bookmarks; add `"category": "Work"` to make a tab. `.local` is gitignored so your links stay private.
 - `cp src/config/personalization.example.json src/config/personalization.local.json` and set `displayName` or `weatherLocation` (lat/lon + label) if you prefer a fixed forecast without geolocation; Settings ⚙️ still lets you adjust the name and weather detail toggle.
 

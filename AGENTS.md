@@ -8,6 +8,7 @@ Build a local, fully static homepage that loads instantly and provides simple, u
 - Optional small tools (timers, notes, etc.)
 - Command palette (⌘/Ctrl+K or `/`) that searches bookmarks, GitLab merge requests, and weather commands before falling back to web search.
 - Personalization defaults live in `src/config/personalization.example.json`; copy to `.local` for private settings.
+- GitLab widget uses `VITE_GITLAB_TOKEN` and optional `VITE_GITLAB_USERNAME`/`VITE_GITLAB_NAMESPACE` env vars to fetch your MRs.
 
 No backend, no server process. Everything runs as static HTML/CSS/JS in the browser.
 

@@ -273,10 +273,16 @@ export function WeatherBadge({
       ]
     : [];
 
-  const quickStats = showContent
+  const temperatureChips = showContent
     ? [
         { label: 'Feels like', value: formatTemperature(weather?.feelsLike) },
-        { label: 'High / Low', value: formatHighLow(weather?.todayHigh, weather?.todayLow) },
+        { label: 'High', value: formatTemperature(weather?.todayHigh) },
+        { label: 'Low', value: formatTemperature(weather?.todayLow) }
+      ].filter((chip) => chip.value !== '—')
+    : [];
+
+  const quickStats = showContent
+    ? [
         {
           label: 'Wind',
           value:
@@ -324,36 +330,50 @@ export function WeatherBadge({
   return (
     <Card
       className={cn(
-        'rounded-[14px] border border-[#E2E8F0] bg-white/90 text-[#0F172A] shadow-sm shadow-slate-200/70 backdrop-blur-md transition-colors dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:text-[#F1F5F9] dark:shadow-[0_16px_40px_rgba(0,0,0,0.32)]',
+        'rounded-[20px] border border-white/50 bg-white/65 text-[#0F172A] shadow-[0_28px_65px_rgba(15,23,42,0.16)] backdrop-blur-2xl transition-colors dark:border-white/10 dark:bg-white/5 dark:text-[#F1F5F9]',
         className
       )}
     >
-      <CardHeader className="space-y-2 px-5 pt-5 pb-3 sm:px-6">
-        <div className="flex items-start justify-between gap-3">
+      <CardHeader className="space-y-4 px-6 pt-6 pb-4">
+        <div className="flex items-start justify-between gap-6">
           <div className="space-y-1">
             <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500 dark:text-white/60">Today</p>
-            <CardTitle className="text-xl font-semibold text-[#0F172A] dark:text-[#F1F5F9]">{locationLabel}</CardTitle>
+            <CardTitle className="text-2xl font-semibold text-[#0F172A] dark:text-[#F1F5F9]">{locationLabel}</CardTitle>
             <CardDescription className="text-xs text-slate-500 dark:text-white/70">{locationSubtitle}</CardDescription>
           </div>
-          <div className="text-right">
-            <p className="text-3xl font-semibold leading-none text-[#0F172A] dark:text-[#F1F5F9] sm:text-4xl">
+          <div className="relative text-right">
+            <span
+              className="pointer-events-none absolute -inset-3 text-[clamp(5rem,14vw,8rem)] font-light text-[#0F172A]/5 dark:text-white/5"
+              aria-hidden="true"
+            >
+              {details.icon}
+            </span>
+            <p className="relative text-[clamp(3.4rem,12vw,5.6rem)] font-semibold leading-none tracking-tight">
               {showContent ? formatTemperature(weather?.temperature) : '—'}
             </p>
-            <p className="text-sm text-slate-500 dark:text-white/80">
-              <span className="mr-1 text-2xl" role="img" aria-hidden="true">
-                {details.icon}
-              </span>
-              {details.label}
-            </p>
+            <p className="relative text-sm text-slate-500 dark:text-white/80">{details.label}</p>
             {showContent && (
-              <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400 dark:text-white/60">
-                {weather?.isDay ? 'Daytime' : 'Night'}
+              <p className="relative text-[11px] uppercase tracking-[0.3em] text-slate-400 dark:text-white/60">
+                {weather?.isDay ? 'Daylight hours' : 'Night outlook'}
               </p>
             )}
           </div>
         </div>
+        {temperatureChips.length > 0 && (
+          <div className="flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.3em] text-slate-500 dark:text-white/70">
+            {temperatureChips.map((chip) => (
+              <span
+                key={chip.label}
+                className="inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/70 px-4 py-1 font-semibold text-[#0F172A] shadow-sm dark:border-white/10 dark:bg-white/10 dark:text-white"
+              >
+                <span className="text-[10px] text-slate-400 dark:text-white/60">{chip.label}</span>
+                <span className="tracking-tight text-base normal-case">{chip.value}</span>
+              </span>
+            ))}
+          </div>
+        )}
       </CardHeader>
-      <CardContent className="space-y-5 px-5 pb-5 sm:px-6">
+      <CardContent className="space-y-5 px-6 pb-6">
         {showContent ? (
           <>
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -367,39 +387,39 @@ export function WeatherBadge({
                 variant="outline"
                 onClick={handleToggleDetails}
                 aria-pressed={showDetails}
-                className="h-8 rounded-full border-[#E2E8F0] bg-white/80 px-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:text-white"
+                className="h-8 rounded-full border-white/50 bg-white/80 px-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-white/10 dark:bg-white/10 dark:text-white"
               >
                 Details {showDetails ? '▴' : '▾'}
               </Button>
             </div>
 
             {typeof rainAlertMinutes === 'number' && rainAlertMinutes <= 60 && (
-              <div className="flex items-center gap-2 rounded-[12px] border border-sky-200/70 bg-sky-50/80 px-3 py-2 text-xs font-semibold text-sky-800 shadow-[0_8px_20px_rgba(59,130,246,0.15)] dark:border-sky-400/30 dark:bg-sky-900/30 dark:text-sky-100">
-                <span className="text-base" role="img" aria-hidden="true">
+              <div className="flex items-center gap-3 rounded-[16px] border border-sky-200/70 bg-sky-50/85 px-4 py-3 text-sm font-semibold text-sky-800 shadow-[0_18px_40px_rgba(59,130,246,0.2)] dark:border-sky-400/30 dark:bg-sky-900/40 dark:text-sky-100">
+                <span className="text-2xl" role="img" aria-hidden="true">
                   🌧️
                 </span>
                 <div className="flex-1">
-                  <p className="text-xs">Rain expected in {Math.max(1, Math.round(rainAlertMinutes))} min</p>
-                  <p className="text-[11px] font-normal text-sky-700 dark:text-sky-200">Take umbrella.</p>
+                  <p>Rain expected in {Math.max(1, Math.round(rainAlertMinutes))} min</p>
+                  <p className="text-[11px] font-normal uppercase tracking-[0.3em] text-sky-700/80 dark:text-sky-200/80">
+                    Take umbrella
+                  </p>
                 </div>
               </div>
             )}
 
-            <div className="flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-white/70">
-              {quickStats.length === 0 ? (
-                <span className="text-slate-400 dark:text-white/60">Pulling forecast…</span>
-              ) : (
-                quickStats.map((stat) => (
+            {quickStats.length > 0 && (
+              <div className="flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.3em] text-slate-500 dark:text-white/70">
+                {quickStats.map((stat) => (
                   <span
                     key={stat.label}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#E2E8F0] bg-white/90 px-3 py-1 text-slate-600 shadow-sm dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:text-white"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/70 px-4 py-1 font-semibold text-[#0F172A] shadow-sm dark:border-white/10 dark:bg-white/10 dark:text-white"
                   >
-                    <span>{stat.label}</span>
-                    <span className="font-semibold text-slate-900 dark:text-white">{stat.value}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-white/60">{stat.label}</span>
+                    <span className="tracking-tight text-base normal-case">{stat.value}</span>
                   </span>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
 
             {showDetails && (
               <div className="space-y-4">
@@ -407,7 +427,7 @@ export function WeatherBadge({
                   {statBlocks.map((stat) => (
                     <div
                       key={stat.label}
-                      className="rounded-[12px] border border-[#E2E8F0] bg-white px-3 py-3 shadow-sm dark:border-[#334155] dark:bg-[#1E293B]"
+                      className="rounded-[14px] border border-white/40 bg-white/80 px-3 py-3 shadow-sm dark:border-white/10 dark:bg-white/10"
                     >
                       <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-white/60">{stat.label}</p>
                       <p className="text-lg font-semibold text-[#0F172A] dark:text-[#F1F5F9]">{stat.value}</p>
@@ -424,7 +444,7 @@ export function WeatherBadge({
                         return (
                           <div
                             key={day.date}
-                            className="rounded-[12px] border border-[#E2E8F0] bg-white px-3 py-3 text-center shadow-sm dark:border-[#334155] dark:bg-[#1E293B]"
+                            className="rounded-[14px] border border-white/40 bg-white/80 px-3 py-3 text-center shadow-sm dark:border-white/10 dark:bg-white/10"
                           >
                             <p className="text-xs text-slate-500 dark:text-white/70">{formatDay(day.date, timeZone)}</p>
                             <div className="text-2xl" role="img" aria-label={meta.label}>
@@ -444,7 +464,7 @@ export function WeatherBadge({
                 )}
 
                 {rainGraph && (
-                  <div className="space-y-2 rounded-[12px] border border-[#E2E8F0] bg-white p-4 shadow-sm dark:border-[#4B5563] dark:bg-[#1E293B]/65">
+                  <div className="space-y-2 rounded-[16px] border border-white/40 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-white/10">
                     <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.35em] text-slate-400 dark:text-white/60">
                       <span>Next 24h precipitation</span>
                       <span className="text-[10px] normal-case tracking-normal text-slate-500 dark:text-white/70">

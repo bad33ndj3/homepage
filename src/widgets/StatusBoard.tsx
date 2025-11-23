@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -7,6 +7,8 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useMergedStatus } from './useMergedStatus';
 
 export type StatusItem = {
   id: string;
@@ -50,6 +52,7 @@ type GitLabMergeRequest = {
   title: string;
   web_url: string;
   updated_at: string;
+  merged_at?: string;
   source_branch: string;
   target_branch: string;
   merge_status?: string;
@@ -64,9 +67,19 @@ type GitLabMergeRequest = {
 };
 
 const gitlabToken = sanitizeToken(import.meta.env.VITE_GITLAB_TOKEN);
+const gitlabUsername = (import.meta.env.VITE_GITLAB_USERNAME ?? '').trim();
 const gitlabEndpoint =
   import.meta.env.VITE_GITLAB_API_URL ??
-  'https://gitlab.com/api/v4/merge_requests?scope=assigned_to_me&state=opened';
+  buildDefaultGitLabApiUrl();
+const MERGED_LOOKBACK_DAYS = 14;
+const mergedSince = new Date(Date.now() - MERGED_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+const gitlabMergedEndpoint = gitlabToken
+  ? buildDefaultGitLabApiUrl({
+      state: 'merged',
+      updated_after: mergedSince.toISOString(),
+      order_by: 'updated_at'
+    })
+  : undefined;
 const gitlabProjectNamespace = (import.meta.env.VITE_GITLAB_NAMESPACE ?? '').trim();
 
 const defaultStatuses: RemoteStatus[] = [
@@ -90,7 +103,7 @@ const defaultStatuses: RemoteStatus[] = [
       return { items: metrics, highlights };
     }
   }
-];
+] as RemoteStatus[];
 
 async function fetchJson(url: string, headers?: HeadersInit) {
   const response = await fetch(url, { headers });
@@ -108,6 +121,55 @@ export function StatusBoard({ onHighlightsChange }: StatusBoardProps) {
   const [statuses, setStatuses] = useState(defaultStatuses);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const {
+    status: mergedStatus,
+    loading: mergedLoading,
+    error: mergedError,
+    load: loadMerged
+  } = useMergedStatus(async () => {
+    if (!gitlabMergedEndpoint || !gitlabToken) return null;
+    const payload = await fetchJson(gitlabMergedEndpoint, { Authorization: `Bearer ${gitlabToken}` });
+    const mrs = Array.isArray(payload) ? (payload as GitLabMergeRequest[]) : [];
+    const count = mrs.length;
+    const items: StatusItem[] = [
+      {
+        id: 'merged14',
+        label: `Merged (last ${MERGED_LOOKBACK_DAYS}d)`,
+        value: String(count),
+        href: buildGitLabFilterUrl({
+          state: 'merged',
+          updated_after: mergedSince.toISOString()
+        })
+      }
+    ];
+    const highlights: StatusHighlight[] = mrs
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(b.merged_at ?? b.updated_at).getTime() -
+          new Date(a.merged_at ?? a.updated_at).getTime()
+      )
+      .slice(0, 4)
+      .map((mr) => ({
+        title: mr.title,
+        url: mr.web_url,
+        meta: `${mr.source_branch} → ${mr.target_branch}`,
+        badge: 'Merged',
+        updatedAt: mr.merged_at ?? mr.updated_at,
+        tags: ['Merged'],
+        sourceBranch: mr.source_branch,
+        targetBranch: mr.target_branch,
+        reviewers: mr.reviewers?.map((reviewer) => reviewer.name).filter(Boolean),
+        labels: mr.labels?.map((label) => label.title).filter(Boolean)
+      }));
+    return {
+      id: 'gitlab-merged',
+      title: `Merged in last ${MERGED_LOOKBACK_DAYS} days`,
+      description: '',
+      items,
+      highlights
+    };
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -155,14 +217,17 @@ export function StatusBoard({ onHighlightsChange }: StatusBoardProps) {
   }, []);
 
   return (
-    <Card className="overflow-hidden rounded-[14px] border border-[#E2E8F0] bg-white/70 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:shadow-[0_16px_40px_rgba(0,0,0,0.32)]">
-      <CardHeader className="space-y-1 pb-3">
-        <CardTitle className="text-lg text-[#0F172A] dark:text-[#F1F5F9]">GitLab Focus</CardTitle>
-        <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
-          Above-the-fold focus on your open merge requests: stale work, conflicts, pipelines.
-        </CardDescription>
+    <Card className="overflow-hidden rounded-[20px] border border-white/50 bg-white/60 shadow-[0_30px_70px_rgba(15,23,42,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5">
+      <CardHeader className="space-y-4 pb-4">
+        <div>
+          <CardTitle className="text-lg font-semibold text-[#0F172A] dark:text-[#F1F5F9]">GitLab Focus</CardTitle>
+          <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
+            Quick pulse on blockers and highlights across your assigned merge requests.
+          </CardDescription>
+        </div>
+        <div className="h-px w-full rounded-full bg-gradient-to-r from-[#3A7AFE]/40 via-white/10 to-transparent dark:from-[#3A7AFE]/30" />
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5 pt-0">
         {statuses.map((status) => (
           <section key={status.id} className="space-y-3">
             {!status.headers && status.envVar && (
@@ -178,11 +243,15 @@ export function StatusBoard({ onHighlightsChange }: StatusBoardProps) {
                   href={item.href}
                   target={item.href ? '_blank' : undefined}
                   rel={item.href ? 'noreferrer' : undefined}
-                  className="inline-flex min-w-[140px] flex-1 items-center justify-between gap-3 rounded-[12px] border border-[#E2E8F0] bg-white/70 px-3 py-2 text-left shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:shadow-[0_14px_30px_rgba(0,0,0,0.26)]"
+                  className="inline-flex min-w-[150px] flex-1 items-center justify-between gap-3 rounded-[14px] border border-white/40 bg-white/70 px-4 py-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.12)] backdrop-blur-lg transition hover:-translate-y-[3px] hover:border-[#3A7AFE]/70 dark:border-white/10 dark:bg-white/10"
                 >
                   <div>
                     <dt className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">{item.label}</dt>
-                    <dd className="text-lg font-semibold text-[#0F172A] dark:text-[#F1F5F9]">{item.value}</dd>
+                    <dd>
+                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${getMetricAccent(item.id)}`}>
+                        {item.value}
+                      </span>
+                    </dd>
                   </div>
                   <span aria-hidden="true" className="text-slate-400 dark:text-slate-500">
                     ↗
@@ -192,7 +261,7 @@ export function StatusBoard({ onHighlightsChange }: StatusBoardProps) {
             </div>
 
             {!!status.highlights?.length && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {status.highlights.map((highlight, index) => (
                   <HighlightRow key={`${highlight.title}-${highlight.url ?? 'local'}-${index}`} highlight={highlight} />
                 ))}
@@ -207,13 +276,77 @@ export function StatusBoard({ onHighlightsChange }: StatusBoardProps) {
                 href={buildGitLabFilterUrl({})}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 rounded-full border border-[#E2E8F0] bg-white/70 px-3 py-1 font-semibold text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:text-[#F1F5F9] dark:shadow-[0_8px_18px_rgba(0,0,0,0.18)]"
+                className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/70 px-3 py-1 font-semibold text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.12)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-white/10 dark:bg-white/10 dark:text-[#F1F5F9]"
               >
                 View all in GitLab ↗
               </a>
             </div>
           </section>
         ))}
+        {gitlabToken && (
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-[#0F172A] dark:text-[#F1F5F9]">
+                  Recently merged
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Peek at wins from the last {MERGED_LOOKBACK_DAYS} days.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={loadMerged}
+                disabled={mergedLoading}
+                className="rounded-full border-[#E2E8F0] bg-white/70 px-3 py-1 text-xs text-[#0F172A] shadow-sm backdrop-blur dark:border-[#4B5563] dark:bg-[#1E293B]/60 dark:text-[#F1F5F9]"
+              >
+                {mergedStatus ? 'Hide' : mergedLoading ? 'Loading…' : 'Show merged'}
+              </Button>
+            </div>
+            {mergedError && (
+              <p className="text-xs text-rose-500 dark:text-rose-300">{mergedError}</p>
+            )}
+            {mergedStatus && (
+              <>
+                <div className="flex flex-wrap gap-2 text-sm">
+                  {mergedStatus.items.map((item) => (
+                    <a
+                      key={item.id}
+                      href={item.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-w-[150px] flex-1 items-center justify-between gap-3 rounded-[14px] border border-white/40 bg-white/70 px-4 py-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.12)] backdrop-blur-lg transition hover:-translate-y-[3px] hover:border-[#3A7AFE]/70 dark:border-white/10 dark:bg-white/10"
+                    >
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          {item.label}
+                        </dt>
+                        <dd>
+                          <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${getMetricAccent(item.id)}`}>
+                            {item.value}
+                          </span>
+                        </dd>
+                      </div>
+                      <span aria-hidden="true" className="text-slate-400 dark:text-slate-500">
+                        ↗
+                      </span>
+                    </a>
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  {mergedStatus.highlights?.map((highlight, index) => (
+                    <HighlightRow
+                      key={`${highlight.title}-${highlight.url ?? 'local'}-merged-${index}`}
+                      highlight={highlight}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
+        )}
       </CardContent>
     </Card>
   );
@@ -297,8 +430,39 @@ export function buildGitLabFilterUrl(params: GitLabFilterParams) {
   const base = gitlabProjectNamespace
     ? `https://gitlab.com/${gitlabProjectNamespace}/-/merge_requests`
     : 'https://gitlab.com/dashboard/merge_requests';
-  const query = new URLSearchParams({ scope: 'assigned_to_me', state: 'opened', ...params });
+  const baseQuery: GitLabFilterParams = {
+    state: 'opened',
+    sort: 'created_date',
+    first_page_size: '20'
+  };
+  if (gitlabUsername) {
+    baseQuery['assignee_username[]'] = gitlabUsername;
+  } else {
+    baseQuery.scope = 'assigned_to_me';
+  }
+  const query = new URLSearchParams({ ...baseQuery, ...params });
   return `${base}?${query.toString()}`;
+}
+
+function buildDefaultGitLabApiUrl(overrides?: GitLabFilterParams) {
+  const params = new URLSearchParams({
+    state: 'opened',
+    order_by: 'updated_at',
+    sort: 'desc',
+    per_page: '40'
+  });
+  if (gitlabUsername) {
+    params.set('scope', 'all');
+    params.append('assignee_username[]', gitlabUsername);
+  } else {
+    params.set('scope', 'assigned_to_me');
+  }
+  if (overrides) {
+    Object.entries(overrides).forEach(([key, value]) => {
+      params.set(key, value);
+    });
+  }
+  return `https://gitlab.com/api/v4/merge_requests?${params.toString()}`;
 }
 
 function buildHighlightTags({
@@ -343,11 +507,32 @@ function getTagClass(tag: string) {
   return 'bg-white/80 text-slate-800 dark:bg-white/10 dark:text-white';
 }
 
+function getMetricAccent(id: string) {
+  const normalized = id.toLowerCase();
+  if (normalized.includes('conflict')) {
+    return 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-100';
+  }
+  if (normalized.includes('pipeline')) {
+    return 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-100';
+  }
+  if (normalized.includes('stale')) {
+    return 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-100';
+  }
+  if (normalized.includes('merged')) {
+    return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-100';
+  }
+  return 'bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white';
+}
+
 function HighlightRow({ highlight }: { highlight: StatusHighlight }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="flex flex-col gap-2 rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-3 text-left text-sm text-[#0F172A] shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:text-[#F1F5F9] dark:shadow-[0_14px_30px_rgba(0,0,0,0.26)]">
+    <div
+      className={`flex flex-col gap-2 rounded-[14px] border border-white/35 bg-white/60 px-4 py-4 text-left text-sm text-[#0F172A] shadow-[0_18px_40px_rgba(15,23,42,0.16)] backdrop-blur-lg transition hover:-translate-y-[3px] hover:border-[#3A7AFE]/70 hover:text-[#3A7AFE] dark:border-white/10 dark:bg-white/5 dark:text-[#F1F5F9] ${
+        highlight.hasConflicts ? 'border-l-4 border-l-rose-200/70 pl-5 dark:border-l-rose-400/40' : ''
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
         <a
           href={highlight.url}

@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { ThemePreference, useTheme } from '../hooks/useTheme';
+import { ThemePreference } from '../hooks/useTheme';
 
 const options: { label: string; value: ThemePreference }[] = [
   { label: 'Light', value: 'light' },
@@ -7,9 +7,13 @@ const options: { label: string; value: ThemePreference }[] = [
   { label: 'System', value: 'system' }
 ];
 
-export function ThemeToggle() {
-  const { preference, setPreference, resolvedTheme } = useTheme();
+type ThemeToggleProps = {
+  preference: ThemePreference;
+  setPreference: (value: ThemePreference | ((prev: ThemePreference) => ThemePreference)) => void;
+  resolvedTheme: 'light' | 'dark';
+};
 
+export function ThemeToggle({ preference, setPreference, resolvedTheme }: ThemeToggleProps) {
   return (
     <div className="flex flex-col gap-2 text-xs text-slate-300">
       <div className="flex flex-wrap items-center gap-2">

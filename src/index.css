@@ -55,6 +55,9 @@
   body {
     min-height: 100vh;
     @apply bg-background text-foreground;
+    font-family: 'Inter var', 'Inter', 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-feature-settings: 'ss01' on, 'ss02' on, 'cv02' on;
+    font-variant-numeric: proportional-nums;
+    line-height: 1.5;
   }
 }
