@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 type Coordinates = {
   latitude: number;
@@ -31,14 +34,14 @@ type RainSample = {
   time: string;
   probability: number;
   amount: number;
-  value: number;
   label: string;
 };
 
 type RainGraphData = {
-  areaPath: string;
-  linePoints: string;
+  probabilityLine: string;
+  bars: Array<{ key: string; x: number; width: number; height: number; y: number }>;
   ticks: Array<{ key: string; label: string }>;
+  maxAmount: number;
 };
 
 type Status = 'idle' | 'loading' | 'ready' | 'error';
@@ -78,9 +81,10 @@ type WeatherBadgeProps = {
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   className?: string;
+  timeZone: string;
 };
 
-export function WeatherBadge({ expanded = false, onExpandedChange, className }: WeatherBadgeProps) {
+export function WeatherBadge({ expanded = false, onExpandedChange, className, timeZone }: WeatherBadgeProps) {
   const [status, setStatus] = useState<Status>('idle');
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [weather, setWeather] = useState<WeatherInfo | null>(null);
@@ -145,14 +149,14 @@ export function WeatherBadge({ expanded = false, onExpandedChange, className }: 
           feelsLike: weatherJson?.current?.apparent_temperature ?? null,
           code: weatherJson?.current?.weather_code ?? null,
           isDay: weatherJson?.current?.is_day === 1,
-          nextRain: extractNextRain(weatherJson?.hourly) ?? null,
+          nextRain: extractNextRain(weatherJson?.hourly, timeZone) ?? null,
           windSpeed: weatherJson?.current?.wind_speed_10m ?? null,
           humidity: weatherJson?.current?.relative_humidity_2m ?? null,
           sunrise: weatherJson?.daily?.sunrise?.[0] ?? null,
           sunset: weatherJson?.daily?.sunset?.[0] ?? null,
           todayHigh: weatherJson?.daily?.temperature_2m_max?.[0] ?? null,
           todayLow: weatherJson?.daily?.temperature_2m_min?.[0] ?? null,
-          rainSeries: buildRainSeries(weatherJson?.hourly),
+          rainSeries: buildRainSeries(weatherJson?.hourly, timeZone),
           daily: buildDailySummary(weatherJson?.daily)
         });
 
@@ -177,7 +181,7 @@ export function WeatherBadge({ expanded = false, onExpandedChange, className }: 
     return () => {
       cancelled = true;
     };
-  }, [coords]);
+  }, [coords, timeZone]);
 
   const details = useMemo(() => getWeatherDescription(weather?.code ?? undefined), [weather?.code]);
   const showContent = status === 'ready' && weather;
@@ -208,14 +212,14 @@ export function WeatherBadge({ expanded = false, onExpandedChange, className }: 
               ? `${Math.round(weather.humidity)}%`
               : '—'
         },
-        { label: 'Sunrise', value: formatTime(weather?.sunrise) },
-        { label: 'Sunset', value: formatTime(weather?.sunset) }
+        { label: 'Sunrise', value: formatTime(weather?.sunrise, timeZone) },
+        { label: 'Sunset', value: formatTime(weather?.sunset, timeZone) }
       ]
     : [];
 
-  const compactStats = showContent
+  const quickStats = showContent
     ? [
-        { label: 'Feels', value: formatTemperature(weather?.feelsLike) },
+        { label: 'Feels like', value: formatTemperature(weather?.feelsLike) },
         { label: 'High / Low', value: formatHighLow(weather?.todayHigh, weather?.todayLow) },
         {
           label: 'Wind',
@@ -233,112 +237,108 @@ export function WeatherBadge({ expanded = false, onExpandedChange, className }: 
         }
       ].filter((stat) => stat.value)
     : [];
-  const quickStats = compactStats.slice(0, 2);
-
-  const containerClasses = showDetails ? 'w-full px-4 py-4' : 'min-w-[240px] px-4 py-3';
-  const sectionBase =
-    'relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/85 text-slate-900 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-white dark:shadow-black/20';
 
   const rainSeries = weather?.rainSeries ?? [];
-  const rainBars = rainSeries.slice(0, 16);
-  const rainGraph = useMemo(() => buildRainGraphData(rainBars), [rainBars]);
-  const showRainGraph = Boolean(rainGraph);
+  const rainGraph = useMemo(() => buildRainGraphData(rainSeries), [rainSeries]);
+  const locationSubtitle = showContent
+    ? weather?.nextRain
+      ? `Rain around ${weather.nextRain}`
+      : 'Skies stay dry for now'
+    : 'Waiting for forecast…';
 
   return (
-    <section className={`${sectionBase} ${containerClasses}${className ? ` ${className}` : ''}`}>
-      {showRainGraph && rainGraph && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-2 sm:px-5" aria-hidden>
-          <svg viewBox="0 0 100 100" className="h-24 w-full">
-            <polyline
-              points={rainGraph.linePoints}
-              fill="none"
-              stroke="rgba(14,165,233,0.85)"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <div className="mt-1 flex justify-between text-[9px] font-medium text-slate-500/70 dark:text-white/60">
-            {rainGraph.ticks.map((tick) => (
-              <span key={tick.key}>{tick.label}</span>
-            ))}
-          </div>
-        </div>
+    <Card
+      className={cn(
+        'rounded-3xl border border-white/40 bg-white/80 text-slate-900 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-white dark:shadow-black/20',
+        className
       )}
-      <div className="relative z-30 flex flex-col gap-3">
+    >
+      <CardHeader className="space-y-3 px-5 pt-5 pb-0 sm:px-6">
         <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-slate-500 dark:text-white/60">
           <span>Local weather</span>
-          <button
+          <Button
             type="button"
+            size="sm"
+            variant="outline"
             onClick={handleToggleDetails}
             aria-pressed={showDetails}
-            className="inline-flex items-center gap-1 rounded-full border border-slate-200/60 bg-white/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-600 transition hover:border-accent hover:bg-white dark:border-white/30 dark:bg-white/10 dark:text-white"
+            className="h-8 rounded-full border-slate-200/60 bg-white/70 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-600 hover:border-accent hover:text-accent dark:border-white/30 dark:bg-white/10 dark:text-white"
           >
-            {showDetails ? 'Collapse' : 'Expand'}
-          </button>
+            {showDetails ? 'Hide detail' : 'Detailed view'}
+          </Button>
         </div>
-
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <CardTitle className="text-2xl font-semibold text-slate-900 dark:text-white">{locationLabel}</CardTitle>
+            <CardDescription className="text-sm text-slate-500 dark:text-white/70">{locationSubtitle}</CardDescription>
+          </div>
+          <div className="text-right">
+            <p className="text-4xl font-semibold leading-none text-slate-900 dark:text-white sm:text-5xl">
+              {showContent ? formatTemperature(weather?.temperature) : '—'}
+            </p>
+            <p className="text-sm text-slate-500 dark:text-white/80">
+              <span className="mr-1 text-2xl" role="img" aria-hidden="true">
+                {details.icon}
+              </span>
+              {details.label}
+            </p>
+            {showContent && (
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-white/60">
+                {weather?.isDay ? 'Daytime' : 'Night'}
+              </p>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5 px-5 pb-5 sm:px-6">
         {showContent ? (
           <>
-            {showDetails ? (
-              <>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-1">
-                    <p className="text-lg font-semibold leading-tight text-slate-900 dark:text-white">{locationLabel}</p>
-                    <p className="text-sm text-slate-500 dark:text-white/80">
-                      {weather?.nextRain ? (
-                        <>
-                          Rain around <span className="font-semibold text-slate-900 dark:text-white">{weather.nextRain}</span>
-                        </>
-                      ) : (
-                        'Skies stay dry for now'
-                      )}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-4xl font-semibold leading-none text-slate-900 dark:text-white sm:text-5xl">
-                      {formatTemperature(weather?.temperature)}
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-white/80">
-                      <span className="mr-1 text-xl" role="img" aria-hidden="true">
-                        {details.icon}
-                      </span>
-                      {details.label}
-                    </p>
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-white/60">
-                      {weather?.isDay ? 'Daytime' : 'Night'}
-                    </p>
-                  </div>
-                </div>
+            <div className="flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-white/70">
+              {quickStats.length === 0 ? (
+                <span className="text-slate-400 dark:text-white/60">Pulling forecast…</span>
+              ) : (
+                quickStats.map((stat) => (
+                  <span
+                    key={stat.label}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/80 px-3 py-1 text-slate-600 shadow-sm dark:border-white/20 dark:bg-white/10 dark:text-white"
+                  >
+                    <span>{stat.label}</span>
+                    <span className="font-semibold text-slate-900 dark:text-white">{stat.value}</span>
+                  </span>
+                ))
+              )}
+            </div>
 
-                <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+            {showDetails && (
+              <div className="space-y-4">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {statBlocks.map((stat) => (
                     <div
                       key={stat.label}
-                      className="rounded-2xl border border-slate-100/80 bg-white/80 px-3 py-2 text-slate-900 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-white"
+                      className="rounded-2xl border border-slate-100/80 bg-white/85 px-3 py-3 shadow-sm dark:border-white/10 dark:bg-white/5"
                     >
                       <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-white/60">{stat.label}</p>
-                      <p className="text-base font-semibold text-slate-900 dark:text-white">{stat.value}</p>
+                      <p className="text-lg font-semibold text-slate-900 dark:text-white">{stat.value}</p>
                     </div>
                   ))}
                 </div>
 
                 {weather?.daily && weather.daily.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-[10px] uppercase tracking-[0.4em] text-slate-400 dark:text-white/60">3-day outlook</p>
-                    <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                    <p className="text-[10px] uppercase tracking-[0.35em] text-slate-400 dark:text-white/60">3-day outlook</p>
+                    <div className="grid gap-2 sm:grid-cols-3">
                       {weather.daily.map((day) => {
                         const meta = getWeatherDescription(day.code);
                         return (
                           <div
                             key={day.date}
-                            className="rounded-2xl border border-slate-100/80 bg-white/80 px-2 py-2 text-center text-slate-900 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-white"
+                            className="rounded-2xl border border-slate-100/80 bg-white/85 px-3 py-3 text-center shadow-sm dark:border-white/10 dark:bg-white/5"
                           >
-                            <p className="text-[11px] text-slate-500 dark:text-white/70">{formatDay(day.date)}</p>
+                            <p className="text-xs text-slate-500 dark:text-white/70">{formatDay(day.date, timeZone)}</p>
                             <div className="text-2xl" role="img" aria-label={meta.label}>
                               {meta.icon}
                             </div>
-                            <p className="text-xs font-semibold text-slate-900 dark:text-white">
+                            <p className="text-sm font-semibold text-slate-900 dark:text-white">
                               {Math.round(day.min)}° / {Math.round(day.max)}°
                             </p>
                             {typeof day.precipChance === 'number' && !Number.isNaN(day.precipChance) && (
@@ -350,46 +350,49 @@ export function WeatherBadge({ expanded = false, onExpandedChange, className }: 
                     </div>
                   </div>
                 )}
-              </>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-base font-semibold leading-tight text-slate-900 dark:text-white">{locationLabel}</p>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-white/60">
-                      {weather?.isDay ? 'Daytime' : 'Night'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <span className="text-2xl" role="img" aria-hidden="true">
-                      {details.icon}
-                    </span>
-                    <div className="text-right">
-                      <p className="text-3xl font-semibold leading-none text-slate-900 dark:text-white">
-                        {formatTemperature(weather?.temperature)}
-                      </p>
-                      <p className="text-[11px] text-slate-500 dark:text-white/70">{details.label}</p>
+
+                {rainGraph && (
+                  <div className="space-y-2 rounded-2xl border border-slate-100/80 bg-white/85 p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.35em] text-slate-400 dark:text-white/60">
+                      <span>Next 24h precipitation</span>
+                      <span className="text-[10px] normal-case tracking-normal text-slate-500 dark:text-white/70">
+                        {rainGraph.maxAmount > 0 ? `${rainGraph.maxAmount.toFixed(1)} mm peak` : 'No rain expected'}
+                      </span>
+                    </div>
+                    <svg viewBox="0 0 100 100" className="h-32 w-full" preserveAspectRatio="none">
+                      {rainGraph.bars.map((bar) => (
+                        <rect
+                          key={bar.key}
+                          x={bar.x}
+                          y={bar.height === 0 ? 100 : bar.y}
+                          width={bar.width}
+                          height={Math.max(bar.height, 0.5)}
+                          rx={1.5}
+                          fill="rgba(59,130,246,0.25)"
+                        />
+                      ))}
+                      <polyline
+                        points={rainGraph.probabilityLine}
+                        fill="none"
+                        stroke="rgba(14,165,233,0.9)"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <div className="flex justify-between text-[9px] font-medium text-slate-500 dark:text-white/60">
+                      {rainGraph.ticks.map((tick) => (
+                        <span key={tick.key}>{tick.label}</span>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-white/70">
+                      <span>Probability %</span>
+                      <span>Rain (mm)</span>
                     </div>
                   </div>
-                </div>
-                <div className="flex flex-wrap gap-1 text-[10px] text-slate-500 dark:text-white/80">
-                  {quickStats.length === 0 ? (
-                    <span className="text-slate-400 dark:text-white/60">Pulling forecast…</span>
-                  ) : (
-                    quickStats.map((stat) => (
-                      <span
-                        key={stat.label}
-                        className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2 py-1 text-slate-600 shadow-sm dark:border-white/15 dark:bg-white/10 dark:text-white"
-                      >
-                        <span>{stat.label}</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">{stat.value}</span>
-                      </span>
-                    ))
-                  )}
-                </div>
+                )}
               </div>
             )}
-
           </>
         ) : (
           <div className="min-h-[72px] text-sm text-slate-500 dark:text-white/80">
@@ -398,12 +401,15 @@ export function WeatherBadge({ expanded = false, onExpandedChange, className }: 
             {status === 'error' && <p className="text-rose-500 dark:text-rose-200">{error ?? 'Unable to fetch weather right now.'}</p>}
           </div>
         )}
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 }
 
-function extractNextRain(hourly?: { time?: string[]; precipitation_probability?: number[]; precipitation?: number[] }) {
+function extractNextRain(
+  hourly: { time?: string[]; precipitation_probability?: number[]; precipitation?: number[] } | undefined,
+  timeZone: string
+) {
   if (!hourly?.time || !hourly.precipitation_probability) return null;
   for (let i = 0; i < hourly.time.length; i += 1) {
     const chance = hourly.precipitation_probability[i];
@@ -411,7 +417,7 @@ function extractNextRain(hourly?: { time?: string[]; precipitation_probability?:
     if (chance >= 40 || amount > 0) {
       const timestamp = new Date(hourly.time[i]);
       if (Number.isNaN(timestamp.getTime())) continue;
-      return timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      return timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone });
     }
   }
   return null;
@@ -435,11 +441,10 @@ function buildDailySummary(daily?: {
   }));
 }
 
-function buildRainSeries(hourly?: {
-  time?: string[];
-  precipitation_probability?: number[];
-  precipitation?: number[];
-}) {
+function buildRainSeries(
+  hourly: { time?: string[]; precipitation_probability?: number[]; precipitation?: number[] } | undefined,
+  timeZone: string
+) {
   if (!hourly?.time || !hourly.precipitation_probability) return undefined;
   const now = Date.now();
   const samples: RainSample[] = [];
@@ -448,17 +453,11 @@ function buildRainSeries(hourly?: {
     const timestamp = new Date(hourly.time[i]);
     if (Number.isNaN(timestamp.getTime())) continue;
     if (timestamp.getTime() < now) continue;
-    const probability = hourly.precipitation_probability?.[i] ?? 0;
-    const amount = hourly.precipitation?.[i] ?? 0;
-    const normalizedFromChance = probability / 100;
-    const normalizedFromAmount = Math.min(amount / 3, 1);
-    const value = Math.min(1, Math.max(normalizedFromChance, normalizedFromAmount));
     samples.push({
       time: hourly.time[i],
-      probability,
-      amount,
-      value,
-      label: timestamp.toLocaleTimeString([], { hour: 'numeric' })
+      probability: hourly.precipitation_probability?.[i] ?? 0,
+      amount: hourly.precipitation?.[i] ?? 0,
+      label: timestamp.toLocaleTimeString([], { hour: 'numeric', timeZone })
     });
   }
 
@@ -466,19 +465,35 @@ function buildRainSeries(hourly?: {
 }
 
 function buildRainGraphData(samples: RainSample[]): RainGraphData | null {
-  if (!samples.length) return null;
-  const maxValue = Math.max(...samples.map((sample) => sample.value));
-  if (maxValue <= 0) return null;
-  const effectiveMax = Math.max(maxValue, 0.3);
-  const lastIndex = Math.max(samples.length - 1, 1);
-  const coords = samples.map((sample, index) => {
-    const x = (index / lastIndex) * 100;
-    const y = 100 - (sample.value / effectiveMax) * 100;
-    return { x, y };
-  });
-  const areaSegments = coords.map((point) => `L${point.x},${point.y}`).join(' ');
-  const areaPath = `M0,100 ${areaSegments} L100,100 Z`;
-  const linePoints = coords.map((point) => `${point.x},${point.y}`).join(' ');
+  if (samples.length < 2) return null;
+
+  const maxAmount = Math.max(...samples.map((sample) => sample.amount));
+  const safeAmountMax = Math.max(maxAmount, 1);
+  const slotWidth = 100 / samples.length;
+  const barWidth = Math.max(slotWidth - 1, slotWidth * 0.6);
+  const probabilityLine = samples
+    .map((sample, index) => {
+      const x = (index / (samples.length - 1)) * 100;
+      const y = 100 - Math.min(Math.max(sample.probability, 0), 100);
+      return `${x},${y}`;
+    })
+    .join(' ');
+
+  const bars = maxAmount > 0
+    ? samples.map((sample, index) => {
+        const height = (Math.max(sample.amount, 0) / safeAmountMax) * 60;
+        const x = index * slotWidth + (slotWidth - barWidth) / 2;
+        const y = 100 - height;
+        return {
+          key: sample.time,
+          x,
+          width: barWidth,
+          height,
+          y
+        };
+      })
+    : [];
+
   const tickSlots = Math.min(4, samples.length);
   const ticks = Array.from({ length: tickSlots }, (_, index) => {
     if (tickSlots === 1) {
@@ -490,13 +505,14 @@ function buildRainGraphData(samples: RainSample[]): RainGraphData | null {
     const sample = samples[sampleIndex];
     return { key: `${sample.time}-${index}`, label: sample.label };
   });
-  return { areaPath, linePoints, ticks };
+
+  return { probabilityLine, bars, ticks, maxAmount };
 }
 
-function formatDay(dateString: string) {
+function formatDay(dateString: string, timeZone: string) {
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString([], { weekday: 'short' });
+  return date.toLocaleDateString([], { weekday: 'short', timeZone });
 }
 
 function formatTemperature(value?: number | null) {
@@ -511,9 +527,9 @@ function formatHighLow(high?: number | null, low?: number | null) {
   return `${formattedHigh} / ${formattedLow}`;
 }
 
-function formatTime(value?: string | null) {
+function formatTime(value: string | null | undefined, timeZone: string) {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone });
 }

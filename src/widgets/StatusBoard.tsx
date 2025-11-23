@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Card } from '../components/Card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card';
 
 export type StatusItem = {
   id: string;
@@ -128,59 +135,64 @@ export function StatusBoard() {
   }, []);
 
   return (
-    <Card
-      title="GitLab Focus"
-      subtitle="Assigned MRs at a glance: stale work, pipeline health, recent pushes."
-      className="overflow-hidden"
-    >
-      {statuses.map((status) => (
-        <section key={status.id} className="space-y-4">
-          {!status.headers && status.envVar && (
-            <p className="rounded-xl border border-dashed border-amber-200 px-3 py-2 text-xs text-amber-600 dark:border-amber-300/40 dark:text-amber-300">
-              Add {status.envVar} to your .env file to enable live data.
-            </p>
-          )}
+    <Card className="overflow-hidden border border-white/40 bg-white/80 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-black/30">
+      <CardHeader className="space-y-1">
+        <CardTitle>GitLab Focus</CardTitle>
+        <CardDescription>Assigned MRs at a glance: stale work, pipeline health, recent pushes.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {statuses.map((status) => (
+          <section key={status.id} className="space-y-4">
+            {!status.headers && status.envVar && (
+              <p className="rounded-xl border border-dashed border-amber-200 px-3 py-2 text-xs text-amber-600 dark:border-amber-300/40 dark:text-amber-300">
+                Add {status.envVar} to your .env file to enable live data.
+              </p>
+            )}
 
-          <div className="grid gap-3 lg:grid-cols-4">
-            {status.items.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-2xl border border-white/40 bg-white/80 px-3 py-3 text-center shadow-sm dark:border-white/10 dark:bg-white/10"
-              >
-                <dt className="text-[11px] uppercase tracking-wide text-slate-400">{item.label}</dt>
-                <dd className="text-2xl font-semibold text-slate-900 dark:text-white">{item.value}</dd>
-              </div>
-            ))}
-          </div>
-
-          {!!status.highlights?.length && (
-            <div className="grid gap-3 lg:grid-cols-3">
-              {status.highlights.map((highlight) => (
+            <div className="grid gap-3 lg:grid-cols-4">
+              {status.items.map((item) => (
                 <a
-                  key={`${highlight.title}-${highlight.url ?? 'local'}`}
-                  href={highlight.url}
-                  target={highlight.url ? '_blank' : undefined}
-                  rel={highlight.url ? 'noreferrer' : undefined}
-                  className="flex flex-col gap-1 rounded-2xl border border-white/40 bg-white/80 px-3 py-3 text-left text-sm text-slate-900 shadow-sm transition hover:border-accent hover:text-accent dark:border-white/10 dark:bg-white/10 dark:text-white"
+                  key={item.id}
+                  href={item.href}
+                  target={item.href ? '_blank' : undefined}
+                  rel={item.href ? 'noreferrer' : undefined}
+                  className="rounded-2xl border border-white/40 bg-white/90 px-3 py-3 text-center shadow-sm transition hover:border-accent hover:text-accent dark:border-white/10 dark:bg-white/10"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium line-clamp-2">{highlight.title}</p>
-                    {highlight.badge && (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-400/20 dark:text-amber-200">
-                        {highlight.badge}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-300">{highlight.meta}</p>
+                  <dt className="text-[11px] uppercase tracking-wide text-slate-400">{item.label}</dt>
+                  <dd className="text-2xl font-semibold text-slate-900 dark:text-white">{item.value}</dd>
                 </a>
               ))}
             </div>
-          )}
-        </section>
-      ))}
 
-      {loading && <p className="mt-3 text-sm text-slate-500 dark:text-slate-300">Loading live status…</p>}
-      {error && <p className="mt-3 text-sm text-rose-500 dark:text-rose-300">{error}</p>}
+            {!!status.highlights?.length && (
+              <div className="grid gap-3 lg:grid-cols-3">
+                {status.highlights.map((highlight) => (
+                  <a
+                    key={`${highlight.title}-${highlight.url ?? 'local'}`}
+                    href={highlight.url}
+                    target={highlight.url ? '_blank' : undefined}
+                    rel={highlight.url ? 'noreferrer' : undefined}
+                    className="flex flex-col gap-1 rounded-2xl border border-white/40 bg-white/80 px-3 py-3 text-left text-sm text-slate-900 shadow-sm transition hover:border-accent hover:text-accent dark:border-white/10 dark:bg-white/10 dark:text-white"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium line-clamp-2">{highlight.title}</p>
+                      {highlight.badge && (
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-200">
+                          {highlight.badge}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-300">{highlight.meta}</p>
+                  </a>
+                ))}
+              </div>
+            )}
+          </section>
+        ))}
+
+        {loading && <p className="text-sm text-slate-500 dark:text-slate-300">Loading live status…</p>}
+        {error && <p className="text-sm text-rose-500 dark:text-rose-300">{error}</p>}
+      </CardContent>
     </Card>
   );
 }

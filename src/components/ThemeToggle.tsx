@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { ThemePreference, useTheme } from '../hooks/useTheme';
 
 const options: { label: string; value: ThemePreference }[] = [
@@ -10,23 +11,20 @@ export function ThemeToggle() {
   const { preference, setPreference, resolvedTheme } = useTheme();
 
   return (
-    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
-      <span>Theme</span>
-      <div className="flex overflow-hidden rounded-xl border border-slate-200 dark:border-white/10">
+    <div className="flex flex-col gap-2 text-xs text-slate-300">
+      <div className="flex flex-wrap items-center gap-2">
         {options.map((option) => (
-          <button
+          <Button
             key={option.value}
             type="button"
+            size="sm"
+            variant={preference === option.value ? 'default' : 'outline'}
             onClick={() => setPreference(option.value)}
-            className={
-              'px-3 py-1 text-xs font-medium transition ' +
-              (preference === option.value
-                ? 'bg-accent text-slate-900'
-                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/10')
-            }
+            aria-pressed={preference === option.value}
+            className="text-xs font-semibold"
           >
             {option.label}
-          </button>
+          </Button>
         ))}
       </div>
       <span className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">

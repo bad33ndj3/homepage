@@ -1,6 +1,15 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import linksConfig from '../config/links.json';
-import { Card } from '../components/Card';
 
 const providers = [
   { label: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
@@ -60,80 +69,90 @@ export function SearchBar() {
   };
 
   return (
-    <Card title="Search & Links" subtitle="Filter quick links first, then jump to the web">
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"
-      >
-        <select
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm dark:border-white/15 dark:bg-white/10 dark:text-white sm:w-auto"
-          value={engine.label}
-          onChange={(event) => {
-            const selected = providers.find((p) => p.label === event.target.value);
-            if (selected) setEngine(selected);
-          }}
+    <Card className="border border-white/40 bg-white/80 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-black/30">
+      <CardHeader className="space-y-1">
+        <CardTitle>Search & Links</CardTitle>
+        <CardDescription>Filter quick links first, then jump to the web.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center"
         >
-          {providers.map((provider) => (
-            <option key={provider.label} value={provider.label} className="bg-slate-800 text-white">
-              {provider.label}
-            </option>
-          ))}
-        </select>
-        <input
-          ref={inputRef}
-          className="w-full flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-base text-slate-900 outline-none focus:border-accent dark:border-white/15 dark:bg-slate-900/60 dark:text-white"
-          placeholder={`Search ${engine.label}`}
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-        <button
-          type="submit"
-          className="rounded-xl bg-accent px-5 py-2 text-sm font-medium text-slate-900 transition hover:brightness-110 sm:text-base"
-        >
-          Open match
-        </button>
-        <button
-          type="button"
-          onClick={handleWebSearch}
-          className="rounded-xl border border-slate-200 px-5 py-2 text-sm text-slate-900 transition hover:border-accent dark:border-white/15 dark:text-white sm:text-base"
-        >
-          Web search
-        </button>
-      </form>
-      <div className="mt-4 space-y-2">
-        <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
-          {normalizedQuery ? `Matches (${filteredLinks.length})` : 'Pinned links'}
-        </p>
-        <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
-          {visibleLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.url}
-              target="_blank"
-              rel="noreferrer"
-              className="group rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm transition hover:border-accent hover:bg-white dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10"
+          <Select
+            value={engine.label}
+            onValueChange={(value) => {
+              const selected = providers.find((provider) => provider.label === value);
+              if (selected) setEngine(selected);
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="Search provider" />
+            </SelectTrigger>
+            <SelectContent>
+              {providers.map((provider) => (
+                <SelectItem key={provider.label} value={provider.label}>
+                  {provider.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            ref={inputRef}
+            className="w-full flex-1"
+            placeholder={`Search ${engine.label}`}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          <Button type="submit" className="w-full sm:w-auto">
+            Open match
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={handleWebSearch}
+          >
+            Web search
+          </Button>
+        </form>
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            {normalizedQuery ? `Matches (${filteredLinks.length})` : 'Pinned links'}
+          </p>
+          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            {visibleLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.url}
+                target="_blank"
+                rel="noreferrer"
+                className="group rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm transition hover:border-accent hover:bg-white dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10"
+              >
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">{link.label}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300">{link.description}</p>
+              </a>
+            ))}
+            {!filteredLinks.length && (
+              <p className="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400">
+                No pinned links found. Press “Web search” to look online.
+              </p>
+            )}
+          </div>
+          {!normalizedQuery && filteredLinks.length > 8 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAll((prev) => !prev)}
+              className="gap-1 text-xs text-slate-500 hover:text-accent dark:text-slate-300"
             >
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">{link.label}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-300">{link.description}</p>
-            </a>
-          ))}
-          {!filteredLinks.length && (
-            <p className="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400">
-              No pinned links found. Press “Web search” to look online.
-            </p>
+              {showAll ? 'Show less' : 'Show more'}
+              <span className={`text-base leading-none ${showAll ? 'rotate-180' : ''}`}>⌄</span>
+            </Button>
           )}
         </div>
-        {!normalizedQuery && filteredLinks.length > 8 && (
-          <button
-            type="button"
-            onClick={() => setShowAll((prev) => !prev)}
-            className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition hover:text-accent dark:text-slate-300"
-          >
-            {showAll ? 'Show less' : 'Show more'}
-            <span className={`text-base leading-none ${showAll ? 'rotate-180' : ''}`}>⌄</span>
-          </button>
-        )}
-      </div>
+      </CardContent>
     </Card>
   );
 }
