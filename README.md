@@ -22,5 +22,6 @@ Drop the `dist/` folder on any static host or run it locally via `file://`.
 
 - Duplicate `.env.example` into `.env` and add your GitLab API token. Optional: set `VITE_GITLAB_NAMESPACE` so filtered metric links open directly in your workspace. Vite exposes variables prefixed with `VITE_`.
 - Update `src/config/links.json` to customize bookmarks. Add `"category": "Work"` (or any label) to have it appear as a tab in the Bookmarks card.
+- Set your default greeting name in `src/config/personalization.json` (`displayName`), then adjust it live in Settings (⚙️).
 - In Settings (⚙️), set your display name for the greeting and toggle detailed weather.
 - Command Palette pulls: bookmarks, GitLab merge requests (top highlights), weather commands, and web-search fallback.

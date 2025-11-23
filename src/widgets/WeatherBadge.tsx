@@ -301,7 +301,7 @@ export function WeatherBadge({
   return (
     <Card
       className={cn(
-        'rounded-[14px] border border-[#E2E8F0] bg-white/90 text-[#0F172A] shadow-sm shadow-slate-200/70 backdrop-blur-md transition-colors dark:border-[#334155] dark:bg-[#1E293B] dark:text-[#F1F5F9] dark:shadow-black/30',
+        'rounded-[14px] border border-[#E2E8F0] bg-white/90 text-[#0F172A] shadow-sm shadow-slate-200/70 backdrop-blur-md transition-colors dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:text-[#F1F5F9] dark:shadow-[0_16px_40px_rgba(0,0,0,0.32)]',
         className
       )}
     >
@@ -344,7 +344,7 @@ export function WeatherBadge({
                 variant="outline"
                 onClick={handleToggleDetails}
                 aria-pressed={showDetails}
-                className="h-8 rounded-full border-[#E2E8F0] bg-white/80 px-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B] dark:text-white"
+                className="h-8 rounded-full border-[#E2E8F0] bg-white/80 px-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:text-white"
               >
                 Details {showDetails ? '▴' : '▾'}
               </Button>
@@ -369,7 +369,7 @@ export function WeatherBadge({
                 quickStats.map((stat) => (
                   <span
                     key={stat.label}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#E2E8F0] bg-white/90 px-3 py-1 text-slate-600 shadow-sm dark:border-[#334155] dark:bg-[#1E293B] dark:text-white"
+                    className="inline-flex items-center gap-2 rounded-full border border-[#E2E8F0] bg-white/90 px-3 py-1 text-slate-600 shadow-sm dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:text-white"
                   >
                     <span>{stat.label}</span>
                     <span className="font-semibold text-slate-900 dark:text-white">{stat.value}</span>
@@ -421,7 +421,7 @@ export function WeatherBadge({
                 )}
 
                 {rainGraph && (
-                  <div className="space-y-2 rounded-[12px] border border-[#E2E8F0] bg-white p-4 shadow-sm dark:border-[#334155] dark:bg-[#1E293B]">
+                  <div className="space-y-2 rounded-[12px] border border-[#E2E8F0] bg-white p-4 shadow-sm dark:border-[#4B5563] dark:bg-[#1E293B]/65">
                     <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.35em] text-slate-400 dark:text-white/60">
                       <span>Next 24h precipitation</span>
                       <span className="text-[10px] normal-case tracking-normal text-slate-500 dark:text-white/70">

@@ -17,8 +17,13 @@ import { WeatherBadge, type WeatherSummary } from './widgets/WeatherBadge';
 import { SettingsModal } from './components/SettingsModal';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import linksConfig from './config/links.json';
+import personalizationConfig from './config/personalization.json';
 
 const SYSTEM_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
+const DEFAULT_DISPLAY_NAME =
+  typeof personalizationConfig?.displayName === 'string' && personalizationConfig.displayName.trim()
+    ? personalizationConfig.displayName.trim()
+    : 'Casper';
 const PRESET_TIME_ZONES = Array.from(
   new Set([
     SYSTEM_TIME_ZONE,
@@ -39,7 +44,7 @@ function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState('');
   const [gitlabHighlights, setGitlabHighlights] = useState<StatusHighlight[]>([]);
-  const [displayName, setDisplayName] = useLocalStorage<string | null>('homebase-display-name', 'Casper');
+  const [displayName, setDisplayName] = useLocalStorage<string | null>('homebase-display-name', DEFAULT_DISPLAY_NAME);
   const [timeZoneSetting, setTimeZoneSetting] = useLocalStorage('homebase-timezone', SYSTEM_TIME_ZONE);
   const normalizedTimeZone = (timeZoneSetting ?? '').trim() || SYSTEM_TIME_ZONE;
   const resolvedTimeZone = useMemo(() => {
@@ -120,7 +125,7 @@ function App() {
   };
 
   const topBar = (
-    <header className="flex flex-col gap-3 rounded-[14px] border border-[#E2E8F0] bg-white/70 px-4 py-3 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-colors dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_12px_35px_rgba(0,0,0,0.25)] sm:flex-row sm:items-center sm:justify-between">
+    <header className="flex flex-col gap-3 rounded-[14px] border border-[#E2E8F0] bg-white/70 px-4 py-3 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-colors dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:shadow-[0_16px_40px_rgba(0,0,0,0.32)] sm:flex-row sm:items-center sm:justify-between">
       <div className="space-y-2 text-center sm:text-left">
         <div className="flex flex-col items-center gap-1 text-[#3A7AFE] sm:items-start sm:gap-2">
           <span className="text-[11px] uppercase tracking-[0.35em] text-slate-500 dark:text-slate-300">{dateLabel}</span>
@@ -129,14 +134,14 @@ function App() {
           </span>
         </div>
         <p className="text-sm font-semibold text-[#0F172A] dark:text-[#F1F5F9]">
-          Hi {displayName?.trim() || 'there'}, {greeting}
+          Hi {displayName?.trim() || DEFAULT_DISPLAY_NAME}, {greeting}
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-3">
         <button
           type="button"
           onClick={handleWeatherPillClick}
-          className="flex min-w-[220px] items-center gap-3 rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-2 text-left shadow-[0_12px_35px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_12px_35px_rgba(0,0,0,0.2)]"
+          className="flex min-w-[220px] items-center gap-3 rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-2 text-left shadow-[0_12px_35px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:shadow-[0_14px_32px_rgba(0,0,0,0.3)]"
         >
           <span className="text-xl" role="img" aria-hidden="true">
             {weatherSummary?.icon ?? '⛅️'}
@@ -162,7 +167,7 @@ function App() {
           onClick={() => setSettingsOpen(true)}
           aria-label="Open settings"
           title="Open settings"
-          className="h-9 w-9 rounded-[10px] border-[#E2E8F0] bg-white/70 text-lg text-[#0F172A] shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:text-[#F1F5F9] dark:shadow-[0_10px_25px_rgba(0,0,0,0.2)]"
+          className="h-9 w-9 rounded-[10px] border-[#E2E8F0] bg-white/70 text-lg text-[#0F172A] shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:text-[#F1F5F9] dark:shadow-[0_12px_28px_rgba(0,0,0,0.28)]"
         >
           ⚙️
         </Button>
@@ -272,7 +277,7 @@ function App() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => setDisplayName('Casper')}
+                  onClick={() => setDisplayName(DEFAULT_DISPLAY_NAME)}
                   className="text-xs text-white/70 hover:text-accent"
                 >
                   Reset
@@ -393,14 +398,14 @@ function BookmarksCard({ links }: { links: LinkConfig[] }) {
   const activeLinks = links.filter((link) => (link.category ?? 'General') === tab);
 
   return (
-    <Card className="border border-[#E2E8F0] bg-white/70 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_12px_35px_rgba(0,0,0,0.25)] rounded-[14px]">
+    <Card className="border border-[#E2E8F0] bg-white/70 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:shadow-[0_16px_40px_rgba(0,0,0,0.32)] rounded-[14px]">
       <CardHeader className="flex flex-col gap-3 pb-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <CardTitle className="text-base text-[#0F172A] dark:text-[#F1F5F9]">Bookmarks</CardTitle>
             <CardDescription className="text-xs text-slate-500 dark:text-slate-400">Tabs follow your link categories.</CardDescription>
           </div>
-          <div className="flex rounded-full border border-[#E2E8F0] bg-white/80 p-1 text-xs dark:border-[#334155] dark:bg-[#1E293B]">
+          <div className="flex rounded-full border border-[#E2E8F0] bg-white/80 p-1 text-xs dark:border-[#4B5563] dark:bg-[#1E293B]/65">
             {categories.map((key) => (
               <Button
                 key={key}
@@ -425,7 +430,7 @@ function BookmarksCard({ links }: { links: LinkConfig[] }) {
             href={link.url}
             target="_blank"
             rel="noreferrer"
-            className="group rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-3 text-sm shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_10px_25px_rgba(0,0,0,0.18)]"
+            className="group rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-3 text-sm shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:shadow-[0_14px_30px_rgba(0,0,0,0.26)]"
           >
             <p className="font-semibold text-[#0F172A] transition group-hover:text-[#3A7AFE] dark:text-[#F1F5F9]">
               {link.label}

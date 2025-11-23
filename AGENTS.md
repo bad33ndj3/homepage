@@ -7,6 +7,7 @@ Build a local, fully static homepage that loads instantly and provides simple, u
 - A DuckDuckGo search bar
 - Optional small tools (timers, notes, etc.)
 - Command palette (⌘/Ctrl+K or `/`) that searches bookmarks, GitLab merge requests, and weather commands before falling back to web search.
+- Personalization config (default display name) lives in `src/config/personalization.json`.
 
 No backend, no server process. Everything runs as static HTML/CSS/JS in the browser.
 

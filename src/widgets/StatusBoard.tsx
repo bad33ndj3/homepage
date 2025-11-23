@@ -155,7 +155,7 @@ export function StatusBoard({ onHighlightsChange }: StatusBoardProps) {
   }, []);
 
   return (
-    <Card className="overflow-hidden rounded-[14px] border border-[#E2E8F0] bg-white/70 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_12px_35px_rgba(0,0,0,0.25)]">
+    <Card className="overflow-hidden rounded-[14px] border border-[#E2E8F0] bg-white/70 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:shadow-[0_16px_40px_rgba(0,0,0,0.32)]">
       <CardHeader className="space-y-1 pb-3">
         <CardTitle className="text-lg text-[#0F172A] dark:text-[#F1F5F9]">GitLab Focus</CardTitle>
         <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
@@ -178,7 +178,7 @@ export function StatusBoard({ onHighlightsChange }: StatusBoardProps) {
                   href={item.href}
                   target={item.href ? '_blank' : undefined}
                   rel={item.href ? 'noreferrer' : undefined}
-                  className="inline-flex min-w-[140px] flex-1 items-center justify-between gap-3 rounded-[12px] border border-[#E2E8F0] bg-white/70 px-3 py-2 text-left shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_10px_25px_rgba(0,0,0,0.18)]"
+                  className="inline-flex min-w-[140px] flex-1 items-center justify-between gap-3 rounded-[12px] border border-[#E2E8F0] bg-white/70 px-3 py-2 text-left shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:shadow-[0_14px_30px_rgba(0,0,0,0.26)]"
                 >
                   <div>
                     <dt className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">{item.label}</dt>
@@ -347,7 +347,7 @@ function HighlightRow({ highlight }: { highlight: StatusHighlight }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="flex flex-col gap-2 rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-3 text-left text-sm text-[#0F172A] shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:text-[#F1F5F9] dark:shadow-[0_10px_25px_rgba(0,0,0,0.18)]">
+    <div className="flex flex-col gap-2 rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-3 text-left text-sm text-[#0F172A] shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:text-[#F1F5F9] dark:shadow-[0_14px_30px_rgba(0,0,0,0.26)]">
       <div className="flex items-start justify-between gap-2">
         <a
           href={highlight.url}
@@ -379,7 +379,7 @@ function HighlightRow({ highlight }: { highlight: StatusHighlight }) {
           <button
             type="button"
             onClick={() => setExpanded((prev) => !prev)}
-            className="ml-1 inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#E2E8F0] bg-white/70 text-xs text-slate-600 transition hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80"
+            className="ml-1 inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#E2E8F0] bg-white/70 text-xs text-slate-600 transition hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65"
             aria-expanded={expanded}
             aria-label={expanded ? 'Hide details' : 'Show details'}
           >
@@ -393,7 +393,7 @@ function HighlightRow({ highlight }: { highlight: StatusHighlight }) {
         </p>
       )}
       {expanded && (
-        <div className="space-y-1 rounded-[10px] border border-[#E2E8F0] bg-white/70 px-3 py-2 text-xs text-slate-600 shadow-inner dark:border-[#334155] dark:bg-[#1E293B]/80 dark:text-slate-200">
+        <div className="space-y-1 rounded-[10px] border border-[#E2E8F0] bg-white/70 px-3 py-2 text-xs text-slate-600 shadow-inner dark:border-[#4B5563] dark:bg-[#1E293B]/60 dark:text-slate-200">
           <p className="flex items-center justify-between gap-2">
             <span className="text-slate-500 dark:text-slate-300">Branches</span>
             <span className="font-semibold text-[#0F172A] dark:text-white">

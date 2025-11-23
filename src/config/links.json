@@ -1,7 +1,6 @@
 [
   { "label": "GitLab", "description": "Merge requests & pipelines", "url": "https://gitlab.com/" },
   { "label": "Jira", "description": "Boards & sprints", "url": "https://energyzero.atlassian.net/jira/software/c/projects/EN/boards/35" },
-
   { "label": "Tweakers", "description": "Tech news & reviews", "url": "https://tweakers.net/" },
   { "label": "NU.nl", "description": "Dutch news", "url": "https://www.nu.nl/" },
   { "label": "Lucidchart", "description": "Diagrams & flowcharts", "url": "https://lucid.app/" },

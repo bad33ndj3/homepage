@@ -76,7 +76,7 @@ export function SearchBarInner({ autoFocus = true }: SearchBarProps) {
   };
 
   return (
-    <Card className="rounded-[14px] border border-[#E2E8F0] bg-white/70 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_12px_35px_rgba(0,0,0,0.25)]">
+    <Card className="rounded-[14px] border border-[#E2E8F0] bg-white/70 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:shadow-[0_16px_40px_rgba(0,0,0,0.32)]">
       <CardHeader className="space-y-1 pb-2">
         <CardTitle className="text-lg text-[#0F172A] dark:text-[#F1F5F9]">Search & Links</CardTitle>
         <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
@@ -153,7 +153,7 @@ export function SearchBarInner({ autoFocus = true }: SearchBarProps) {
                 href={link.url}
                 target="_blank"
                 rel="noreferrer"
-                className="group rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-2.5 text-sm shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_10px_25px_rgba(0,0,0,0.18)]"
+                className="group rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-2.5 text-sm shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#4B5563] dark:bg-[#1E293B]/65 dark:shadow-[0_14px_30px_rgba(0,0,0,0.26)]"
               >
                 <p className="text-sm font-semibold text-[#0F172A] transition group-hover:text-[#3A7AFE] dark:text-[#F1F5F9]">
                   {link.label}
