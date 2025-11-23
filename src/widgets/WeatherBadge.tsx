@@ -14,6 +14,7 @@ type WeatherInfo = {
   code: number | null;
   isDay: boolean;
   nextRain?: string | null;
+  nextRainMinutes?: number | null;
   windSpeed?: number | null;
   humidity?: number | null;
   sunrise?: string | null;
@@ -158,6 +159,7 @@ export function WeatherBadge({
 
         if (cancelled) return;
 
+        const rainSeries = buildRainSeries(weatherJson?.hourly, timeZone);
         setWeather({
           temperature: weatherJson?.current?.temperature_2m ?? null,
           feelsLike: weatherJson?.current?.apparent_temperature ?? null,
@@ -170,7 +172,8 @@ export function WeatherBadge({
           sunset: weatherJson?.daily?.sunset?.[0] ?? null,
           todayHigh: weatherJson?.daily?.temperature_2m_max?.[0] ?? null,
           todayLow: weatherJson?.daily?.temperature_2m_min?.[0] ?? null,
-          rainSeries: buildRainSeries(weatherJson?.hourly, timeZone),
+          rainSeries,
+          nextRainMinutes: computeNextRainMinutes(rainSeries),
           daily: buildDailySummary(weatherJson?.daily)
         });
 
@@ -292,11 +295,13 @@ export function WeatherBadge({
         .filter(Boolean)
         .join(' · ') || null
     : null;
+  const rainAlertMinutes =
+    showContent && typeof weather?.nextRainMinutes === 'number' ? weather.nextRainMinutes : null;
 
   return (
     <Card
       className={cn(
-        'rounded-3xl border border-white/40 bg-white/80 text-slate-900 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-white dark:shadow-black/20',
+        'rounded-[14px] border border-[#E2E8F0] bg-white/90 text-[#0F172A] shadow-sm shadow-slate-200/70 backdrop-blur-md transition-colors dark:border-[#334155] dark:bg-[#1E293B] dark:text-[#F1F5F9] dark:shadow-black/30',
         className
       )}
     >
@@ -304,11 +309,11 @@ export function WeatherBadge({
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500 dark:text-white/60">Today</p>
-            <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">{locationLabel}</CardTitle>
+            <CardTitle className="text-xl font-semibold text-[#0F172A] dark:text-[#F1F5F9]">{locationLabel}</CardTitle>
             <CardDescription className="text-xs text-slate-500 dark:text-white/70">{locationSubtitle}</CardDescription>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-semibold leading-none text-slate-900 dark:text-white sm:text-4xl">
+            <p className="text-3xl font-semibold leading-none text-[#0F172A] dark:text-[#F1F5F9] sm:text-4xl">
               {showContent ? formatTemperature(weather?.temperature) : '—'}
             </p>
             <p className="text-sm text-slate-500 dark:text-white/80">
@@ -339,11 +344,23 @@ export function WeatherBadge({
                 variant="outline"
                 onClick={handleToggleDetails}
                 aria-pressed={showDetails}
-                className="h-8 rounded-full border-slate-200/60 bg-white/70 px-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 hover:border-accent hover:text-accent dark:border-white/30 dark:bg-white/10 dark:text-white"
+                className="h-8 rounded-full border-[#E2E8F0] bg-white/80 px-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B] dark:text-white"
               >
                 Details {showDetails ? '▴' : '▾'}
               </Button>
             </div>
+
+            {typeof rainAlertMinutes === 'number' && rainAlertMinutes <= 60 && (
+              <div className="flex items-center gap-2 rounded-[12px] border border-sky-200/70 bg-sky-50/80 px-3 py-2 text-xs font-semibold text-sky-800 shadow-[0_8px_20px_rgba(59,130,246,0.15)] dark:border-sky-400/30 dark:bg-sky-900/30 dark:text-sky-100">
+                <span className="text-base" role="img" aria-hidden="true">
+                  🌧️
+                </span>
+                <div className="flex-1">
+                  <p className="text-xs">Rain expected in {Math.max(1, Math.round(rainAlertMinutes))} min</p>
+                  <p className="text-[11px] font-normal text-sky-700 dark:text-sky-200">Take umbrella.</p>
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-white/70">
               {quickStats.length === 0 ? (
@@ -352,7 +369,7 @@ export function WeatherBadge({
                 quickStats.map((stat) => (
                   <span
                     key={stat.label}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/80 px-3 py-1 text-slate-600 shadow-sm dark:border-white/20 dark:bg-white/10 dark:text-white"
+                    className="inline-flex items-center gap-2 rounded-full border border-[#E2E8F0] bg-white/90 px-3 py-1 text-slate-600 shadow-sm dark:border-[#334155] dark:bg-[#1E293B] dark:text-white"
                   >
                     <span>{stat.label}</span>
                     <span className="font-semibold text-slate-900 dark:text-white">{stat.value}</span>
@@ -367,10 +384,10 @@ export function WeatherBadge({
                   {statBlocks.map((stat) => (
                     <div
                       key={stat.label}
-                      className="rounded-2xl border border-slate-100/80 bg-white/85 px-3 py-3 shadow-sm dark:border-white/10 dark:bg-white/5"
+                      className="rounded-[12px] border border-[#E2E8F0] bg-white px-3 py-3 shadow-sm dark:border-[#334155] dark:bg-[#1E293B]"
                     >
                       <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-white/60">{stat.label}</p>
-                      <p className="text-lg font-semibold text-slate-900 dark:text-white">{stat.value}</p>
+                      <p className="text-lg font-semibold text-[#0F172A] dark:text-[#F1F5F9]">{stat.value}</p>
                     </div>
                   ))}
                 </div>
@@ -384,7 +401,7 @@ export function WeatherBadge({
                         return (
                           <div
                             key={day.date}
-                            className="rounded-2xl border border-slate-100/80 bg-white/85 px-3 py-3 text-center shadow-sm dark:border-white/10 dark:bg-white/5"
+                            className="rounded-[12px] border border-[#E2E8F0] bg-white px-3 py-3 text-center shadow-sm dark:border-[#334155] dark:bg-[#1E293B]"
                           >
                             <p className="text-xs text-slate-500 dark:text-white/70">{formatDay(day.date, timeZone)}</p>
                             <div className="text-2xl" role="img" aria-label={meta.label}>
@@ -404,7 +421,7 @@ export function WeatherBadge({
                 )}
 
                 {rainGraph && (
-                  <div className="space-y-2 rounded-2xl border border-slate-100/80 bg-white/85 p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+                  <div className="space-y-2 rounded-[12px] border border-[#E2E8F0] bg-white p-4 shadow-sm dark:border-[#334155] dark:bg-[#1E293B]">
                     <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.35em] text-slate-400 dark:text-white/60">
                       <span>Next 24h precipitation</span>
                       <span className="text-[10px] normal-case tracking-normal text-slate-500 dark:text-white/70">
@@ -514,6 +531,22 @@ function buildRainSeries(
   }
 
   return samples.length > 0 ? samples : undefined;
+}
+
+function computeNextRainMinutes(samples: RainSample[] | undefined) {
+  if (!samples || samples.length === 0) return null;
+  const now = Date.now();
+  const next = samples.find((sample) => {
+    const ts = new Date(sample.time).getTime();
+    if (Number.isNaN(ts) || ts < now) return false;
+    return sample.probability >= 40 || sample.amount > 0;
+  });
+  if (!next) return null;
+  const ts = new Date(next.time).getTime();
+  if (Number.isNaN(ts)) return null;
+  const diff = ts - now;
+  if (diff < 0) return null;
+  return Math.floor(diff / 60000);
 }
 
 function buildRainGraphData(samples: RainSample[]): RainGraphData | null {

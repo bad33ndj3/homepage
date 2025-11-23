@@ -6,6 +6,7 @@ Build a local, fully static homepage that loads instantly and provides simple, u
 - Quick-access link tiles
 - A DuckDuckGo search bar
 - Optional small tools (timers, notes, etc.)
+- Command palette (⌘/Ctrl+K or `/`) that searches bookmarks, GitLab merge requests, and weather commands before falling back to web search.
 
 No backend, no server process. Everything runs as static HTML/CSS/JS in the browser.
 
@@ -18,11 +19,11 @@ No backend, no server process. Everything runs as static HTML/CSS/JS in the brow
 - **Fetch API** – direct client-side requests to GitLab APIs.
 
 ### Styling Notes
-- Light theme uses a soft radial gradient (`from-slate-50 via-white to slate-100`) and cards with translucent white backgrounds + subtle borders.
-- Dark theme applies the Tailwind `dark` class on `<html>` and uses `from-slate-950 via-slate-900 to indigo-950` gradients with glassmorphism cards.
-- Utility classes keep widgets compact (e.g., `rounded-2xl`, `backdrop-blur`, `border-white/10`) while remaining responsive with flex/grid layouts.
-- Quick links default to 8 tiles with a “Show more” toggle; metrics in the GitLab card are clickable and use accent hover states.
-- Current layout: hero header (greeting + weather toggle) → merged search/link widget → GitLab focus card (full-width) optimized for a 14" MacBook Pro viewport.
+- Light theme uses a soft radial gradient (`from-slate-50 via-white to slate-100`) and glassmorphism cards (70–90% opacity, 12–18px blur, thin borders).
+- Dark theme applies the Tailwind `dark` class on `<html>` and uses `from-slate-950 via-slate-900 to indigo-950` gradients with matching frosted cards.
+- Utility classes keep widgets compact (rounded geometry, backdrop blur) while remaining responsive with flex/grid layouts.
+- Quick links/bookmarks support categories as tabs; Command Palette surfaces bookmarks and GitLab MRs.
+- Current layout: slim top bar (time/date/greeting + weather pill) → merged search/link widget → GitLab focus card → weather + bookmarks column; optimized for a 14" MacBook Pro viewport.
 
 ## Output
 - `dist/` contains only `index.html`, `*.js`, and `*.css`.

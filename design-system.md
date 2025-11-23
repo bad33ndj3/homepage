@@ -9,10 +9,11 @@ A cold, minimal, futuristic visual identity designed for a personal productivity
 The Arctic Future theme is defined by:
 
 - A cold, crisp color palette.
-- Clean, minimal surfaces.
+- Clean, minimal surfaces with frosted glass layers.
 - Subtle futuristic accents.
 - Strong visual hierarchy through spacing and type.
 - Rounded geometry that feels modern but not playful.
+- Command palette and cards share the same frosted shell for cohesion.
 
 The goal is a dashboard that feels fast, calm, and intentional.
 
@@ -23,7 +24,7 @@ The goal is a dashboard that feels fast, calm, and intentional.
 ### Light Mode
 
 - Background: `#F7F9FC`
-- Card Background: `#FFFFFF`
+- Card Background: `#FFFFFF` over a frosted layer (glass blur 12–18px, 70–90% opacity)
 - Primary Accent (Cyber Blue): `#3A7AFE`
 - Accent Light: `#E6F0FF`
 - Text Primary: `#0F172A`
@@ -38,11 +39,12 @@ The goal is a dashboard that feels fast, calm, and intentional.
 - Success: `#10B981`
 - Warning: `#F59E0B`
 - Error: `#EF4444`
+- Rain alert strip: `#E6F0FF` with `#3B82F6` text.
 
 ### Dark Mode
 
 - Background: `#0F172A`
-- Card Background: `#1E293B`
+- Card Background: `#1E293B` over a frosted layer (glass blur 12–18px, 75–85% opacity)
 - Primary Accent (Cyber Blue): `#3A7AFE`
 - Accent Dimmed: `#1E3A8A`
 - Text Primary: `#F1F5F9`
@@ -69,6 +71,7 @@ Used subtly for small indicators:
 - Input Radius: `10px`
 - Button Radius: `8px`
 - Pill Radius: `14px`
+- Frosted edges stay crisp; avoid overly soft rounding.
 
 Rounded, but not soft or playful—precise, modern curvature.
 
@@ -116,35 +119,38 @@ Whitespace is deliberate and functional.
 
 ### Cards
 
-- Clean white or slate surfaces.
-- Thin borders.
-- Soft elevation shadow.
+- Frosted glass surfaces with 12–18px blur and 70–90% opacity.
+- Thin borders (light: `#E2E8F0`; dark: `#334155`) with subtle inner stroke optional.
+- Soft elevation shadow: `0 12px 35px rgba(15, 23, 42, 0.12)` light, `0 12px 35px rgba(0, 0, 0, 0.25)` dark.
 - Balanced padding.
 
 ### Search Input
 
-- Minimal border.
+- Minimal border on frosted base.
 - Clean rounded geometry.
-- Light accent glow when active.
+- Light accent glow when active; soft blue ring with subtle blur.
 
 ### Pinned Link Pills
 
-- Flat or slightly gradient surfaces.
+- Frosted micro-cards with thin border and light blur.
 - Minimal shadows.
 - Compact, futuristic presence.
+- Category tabs inherit accent highlight; tabs are text-first, not heavy pills.
 
 ### Weather Summary
 
 - Subtle color cues.
 - Small icons.
 - Clean temperature typography.
-- No large themed backgrounds.
+- Glass card with crisp border; avoid heavy background imagery.
+- Rain alerts appear as a slim blue strip with concise copy.
 
 ### GitLab Sections
 
 - Dense, clear, structured.
 - Small badges for status.
-- Subtle hover elevation.
+- Frosted rows with hover lift and accent border.
+- Expandable rows reveal secondary meta (branches, labels, pipeline) without breaking the frosted shell.
 
 ---
 
@@ -154,6 +160,7 @@ Whitespace is deliberate and functional.
 - Subtle movement: `1–2px` lifts.
 - Opacity fades for switching content.
 - No bouncy or elastic animations.
+- Frosted elements keep blur consistent—avoid changing blur on hover.
 
 Futuristic means smooth, quiet micro-interactions.
 

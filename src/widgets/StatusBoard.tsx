@@ -15,7 +15,7 @@ export type StatusItem = {
   href?: string;
 };
 
-type StatusHighlight = {
+export type StatusHighlight = {
   title: string;
   url?: string;
   meta: string;
@@ -25,6 +25,8 @@ type StatusHighlight = {
   sourceBranch?: string;
   targetBranch?: string;
   pipelineStatus?: string;
+  reviewers?: string[];
+  labels?: string[];
   isStale?: boolean;
   hasConflicts?: boolean;
 };
@@ -53,8 +55,11 @@ type GitLabMergeRequest = {
   merge_status?: string;
   draft?: boolean;
   work_in_progress?: boolean;
+  labels?: Array<{ title: string }>;
+  reviewers?: Array<{ name: string }>;
   head_pipeline?: {
     status?: string;
+    web_url?: string;
   };
 };
 
@@ -95,7 +100,11 @@ async function fetchJson(url: string, headers?: HeadersInit) {
   return response.json();
 }
 
-export function StatusBoard() {
+type StatusBoardProps = {
+  onHighlightsChange?: (highlights: StatusHighlight[]) => void;
+};
+
+export function StatusBoard({ onHighlightsChange }: StatusBoardProps) {
   const [statuses, setStatuses] = useState(defaultStatuses);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +128,11 @@ export function StatusBoard() {
               return status;
             }
 
-            return status.transform ? { ...status, ...status.transform(payload, status) } : status;
+            const next = status.transform ? { ...status, ...status.transform(payload, status) } : status;
+            if (status.id === 'gitlab' && next.highlights && onHighlightsChange) {
+              onHighlightsChange(next.highlights);
+            }
+            return next;
           } catch (err) {
             if (!cancelled) {
               setError((err as Error).message);
@@ -142,10 +155,10 @@ export function StatusBoard() {
   }, []);
 
   return (
-    <Card className="overflow-hidden border border-white/40 bg-white/85 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-black/30">
+    <Card className="overflow-hidden rounded-[14px] border border-[#E2E8F0] bg-white/70 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_12px_35px_rgba(0,0,0,0.25)]">
       <CardHeader className="space-y-1 pb-3">
-        <CardTitle className="text-lg">GitLab Focus</CardTitle>
-        <CardDescription className="text-xs">
+        <CardTitle className="text-lg text-[#0F172A] dark:text-[#F1F5F9]">GitLab Focus</CardTitle>
+        <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
           Above-the-fold focus on your open merge requests: stale work, conflicts, pipelines.
         </CardDescription>
       </CardHeader>
@@ -165,58 +178,23 @@ export function StatusBoard() {
                   href={item.href}
                   target={item.href ? '_blank' : undefined}
                   rel={item.href ? 'noreferrer' : undefined}
-                  className="inline-flex min-w-[140px] flex-1 items-center justify-between gap-3 rounded-2xl border border-white/50 bg-white/90 px-3 py-2 text-left shadow-sm transition hover:border-accent hover:text-accent dark:border-white/10 dark:bg-white/10"
+                  className="inline-flex min-w-[140px] flex-1 items-center justify-between gap-3 rounded-[12px] border border-[#E2E8F0] bg-white/70 px-3 py-2 text-left shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_10px_25px_rgba(0,0,0,0.18)]"
                 >
                   <div>
-                    <dt className="text-[11px] uppercase tracking-wide text-slate-400">{item.label}</dt>
-                    <dd className="text-lg font-semibold text-slate-900 dark:text-white">{item.value}</dd>
+                    <dt className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">{item.label}</dt>
+                    <dd className="text-lg font-semibold text-[#0F172A] dark:text-[#F1F5F9]">{item.value}</dd>
                   </div>
-                  <span aria-hidden="true">↗</span>
+                  <span aria-hidden="true" className="text-slate-400 dark:text-slate-500">
+                    ↗
+                  </span>
                 </a>
               ))}
             </div>
 
             {!!status.highlights?.length && (
               <div className="space-y-2">
-                {status.highlights.map((highlight) => (
-                  <a
-                    key={`${highlight.title}-${highlight.url ?? 'local'}`}
-                    href={highlight.url}
-                    target={highlight.url ? '_blank' : undefined}
-                    rel={highlight.url ? 'noreferrer' : undefined}
-                    className="flex flex-col gap-1 rounded-2xl border border-white/40 bg-white/90 px-3 py-3 text-left text-sm text-slate-900 shadow-sm transition hover:border-accent hover:text-accent dark:border-white/10 dark:bg-white/10 dark:text-white"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="line-clamp-1 font-semibold">{highlight.title}</p>
-                      <div className="flex flex-wrap items-center gap-1">
-                        {highlight.tags?.map((tag) => (
-                          <Badge
-                            key={`${highlight.title}-${tag}`}
-                            variant="secondary"
-                            className={getTagClass(tag)}
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                        {!highlight.tags?.length && highlight.badge && (
-                          <Badge
-                            variant="secondary"
-                            className="bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-200"
-                          >
-                            {highlight.badge}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-300">
-                      {highlight.meta}
-                    </p>
-                    {highlight.updatedAt && (
-                      <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
-                        Updated {formatRelativeTime(highlight.updatedAt)}
-                      </p>
-                    )}
-                  </a>
+                {status.highlights.map((highlight, index) => (
+                  <HighlightRow key={`${highlight.title}-${highlight.url ?? 'local'}-${index}`} highlight={highlight} />
                 ))}
               </div>
             )}
@@ -229,7 +207,7 @@ export function StatusBoard() {
                 href={buildGitLabFilterUrl({})}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 rounded-full border border-white/50 bg-white/80 px-3 py-1 font-semibold text-slate-700 transition hover:border-accent hover:text-accent dark:border-white/10 dark:bg-white/10 dark:text-white"
+                className="inline-flex items-center gap-1 rounded-full border border-[#E2E8F0] bg-white/70 px-3 py-1 font-semibold text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:text-[#F1F5F9] dark:shadow-[0_8px_18px_rgba(0,0,0,0.18)]"
               >
                 View all in GitLab ↗
               </a>
@@ -304,6 +282,8 @@ function buildGitLabInsights(mrs: GitLabMergeRequest[]) {
       sourceBranch: mr.source_branch,
       targetBranch: mr.target_branch,
       pipelineStatus: mr.head_pipeline?.status,
+      reviewers: mr.reviewers?.map((reviewer) => reviewer.name).filter(Boolean),
+      labels: mr.labels?.map((label) => label.title).filter(Boolean),
       isStale: new Date(mr.updated_at).getTime() < staleThreshold,
       hasConflicts: mr.merge_status === 'cannot_be_merged'
     }));
@@ -313,7 +293,7 @@ function buildGitLabInsights(mrs: GitLabMergeRequest[]) {
 
 type GitLabFilterParams = Record<string, string>;
 
-function buildGitLabFilterUrl(params: GitLabFilterParams) {
+export function buildGitLabFilterUrl(params: GitLabFilterParams) {
   const base = gitlabProjectNamespace
     ? `https://gitlab.com/${gitlabProjectNamespace}/-/merge_requests`
     : 'https://gitlab.com/dashboard/merge_requests';
@@ -361,6 +341,93 @@ function getTagClass(tag: string) {
     return 'bg-slate-200 text-slate-800 dark:bg-white/10 dark:text-white';
   }
   return 'bg-white/80 text-slate-800 dark:bg-white/10 dark:text-white';
+}
+
+function HighlightRow({ highlight }: { highlight: StatusHighlight }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-2 rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-3 text-left text-sm text-[#0F172A] shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:text-[#F1F5F9] dark:shadow-[0_10px_25px_rgba(0,0,0,0.18)]">
+      <div className="flex items-start justify-between gap-2">
+        <a
+          href={highlight.url}
+          target={highlight.url ? '_blank' : undefined}
+          rel={highlight.url ? 'noreferrer' : undefined}
+          className="flex-1"
+        >
+          <p className="line-clamp-1 font-semibold">{highlight.title}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-300">{highlight.meta}</p>
+        </a>
+        <div className="flex flex-wrap items-center gap-1">
+          {highlight.tags?.map((tag) => (
+            <Badge
+              key={`${highlight.title}-${tag}`}
+              variant="secondary"
+              className={getTagClass(tag)}
+            >
+              {tag}
+            </Badge>
+          ))}
+          {!highlight.tags?.length && highlight.badge && (
+            <Badge
+              variant="secondary"
+              className="bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-200"
+            >
+              {highlight.badge}
+            </Badge>
+          )}
+          <button
+            type="button"
+            onClick={() => setExpanded((prev) => !prev)}
+            className="ml-1 inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#E2E8F0] bg-white/70 text-xs text-slate-600 transition hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80"
+            aria-expanded={expanded}
+            aria-label={expanded ? 'Hide details' : 'Show details'}
+          >
+            {expanded ? '▴' : '▾'}
+          </button>
+        </div>
+      </div>
+      {highlight.updatedAt && (
+        <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+          Updated {formatRelativeTime(highlight.updatedAt)}
+        </p>
+      )}
+      {expanded && (
+        <div className="space-y-1 rounded-[10px] border border-[#E2E8F0] bg-white/70 px-3 py-2 text-xs text-slate-600 shadow-inner dark:border-[#334155] dark:bg-[#1E293B]/80 dark:text-slate-200">
+          <p className="flex items-center justify-between gap-2">
+            <span className="text-slate-500 dark:text-slate-300">Branches</span>
+            <span className="font-semibold text-[#0F172A] dark:text-white">
+              {highlight.sourceBranch} → {highlight.targetBranch}
+            </span>
+          </p>
+          {highlight.pipelineStatus && (
+            <p className="flex items-center justify-between gap-2">
+              <span className="text-slate-500 dark:text-slate-300">Pipeline</span>
+              <span className="font-semibold capitalize text-[#0F172A] dark:text-white">{highlight.pipelineStatus}</span>
+            </p>
+          )}
+          {highlight.reviewers?.length ? (
+            <p className="flex items-start gap-2">
+              <span className="text-slate-500 dark:text-slate-300">Reviewers</span>
+              <span className="flex-1 text-[#0F172A] dark:text-white">{highlight.reviewers.join(', ')}</span>
+            </p>
+          ) : null}
+          {highlight.labels?.length ? (
+            <div className="flex flex-wrap gap-1">
+              {highlight.labels.map((label) => (
+                <span
+                  key={`${highlight.title}-label-${label}`}
+                  className="rounded-full bg-[#E6F0FF] px-2 py-1 text-[11px] font-semibold text-[#3A7AFE] dark:bg-[#1E3A8A] dark:text-white"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function normalizeCount(payload: unknown) {

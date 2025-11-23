@@ -10,8 +10,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { SearchBar } from './widgets/SearchBar';
-import { StatusBoard } from './widgets/StatusBoard';
+import { CommandPalette, type CommandItem } from './components/CommandPalette';
+import { SearchBarInner as SearchBar } from './widgets/SearchBar';
+import { StatusBoard, buildGitLabFilterUrl, type StatusHighlight } from './widgets/StatusBoard';
 import { WeatherBadge, type WeatherSummary } from './widgets/WeatherBadge';
 import { SettingsModal } from './components/SettingsModal';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -35,6 +36,10 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [detailedWeather, setDetailedWeather] = useLocalStorage('homebase-weather-details', false);
   const [weatherSummary, setWeatherSummary] = useState<WeatherSummary | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState('');
+  const [gitlabHighlights, setGitlabHighlights] = useState<StatusHighlight[]>([]);
+  const [displayName, setDisplayName] = useLocalStorage<string | null>('homebase-display-name', 'Casper');
   const [timeZoneSetting, setTimeZoneSetting] = useLocalStorage('homebase-timezone', SYSTEM_TIME_ZONE);
   const normalizedTimeZone = (timeZoneSetting ?? '').trim() || SYSTEM_TIME_ZONE;
   const resolvedTimeZone = useMemo(() => {
@@ -60,6 +65,10 @@ function App() {
   const [dateLabel, setDateLabel] = useState(() => formatDate(new Date(), resolvedTimeZone));
   const [timeLabel, setTimeLabel] = useState(() => formatTimeOfDay(new Date(), resolvedTimeZone));
   const weatherSectionRef = useRef<HTMLDivElement>(null);
+  const favorites: LinkConfig[] = (linksConfig as LinkConfig[]).map((link) => ({
+    ...link,
+    category: link.category ?? defaultCategoryByLabel[link.label] ?? 'General'
+  }));
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -76,27 +85,58 @@ function App() {
     return () => window.clearInterval(id);
   }, [resolvedTimeZone]);
 
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTypingTarget =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable);
+
+      const isMetaK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
+      const isSlash = event.key === '/' && !event.metaKey && !event.ctrlKey;
+
+      if (isMetaK) {
+        event.preventDefault();
+        setPaletteOpen(true);
+        setPaletteQuery('');
+      }
+
+      if (!isTypingTarget && isSlash) {
+        event.preventDefault();
+        setPaletteOpen(true);
+        setPaletteQuery('');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   const handleWeatherPillClick = () => {
     setDetailedWeather(true);
     weatherSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const topBar = (
-    <header className="flex flex-col gap-3 rounded-2xl border border-white/40 bg-white/80 px-4 py-3 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-black/20 sm:flex-row sm:items-center sm:justify-between">
-      <div className="space-y-1">
-        <div className="flex items-baseline gap-3 text-accent">
-          <span className="text-[11px] uppercase tracking-[0.35em]">{dateLabel}</span>
-          <span className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
+    <header className="flex flex-col gap-3 rounded-[14px] border border-[#E2E8F0] bg-white/70 px-4 py-3 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-colors dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_12px_35px_rgba(0,0,0,0.25)] sm:flex-row sm:items-center sm:justify-between">
+      <div className="space-y-2 text-center sm:text-left">
+        <div className="flex flex-col items-center gap-1 text-[#3A7AFE] sm:items-start sm:gap-2">
+          <span className="text-[11px] uppercase tracking-[0.35em] text-slate-500 dark:text-slate-300">{dateLabel}</span>
+          <span className="text-4xl font-semibold leading-none tracking-tight text-[#0F172A] dark:text-[#F1F5F9]">
             {timeLabel}
           </span>
         </div>
-        <p className="text-sm font-semibold text-slate-900 dark:text-white">Hi Casper, {greeting}</p>
+        <p className="text-sm font-semibold text-[#0F172A] dark:text-[#F1F5F9]">
+          Hi {displayName?.trim() || 'there'}, {greeting}
+        </p>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-3">
         <button
           type="button"
           onClick={handleWeatherPillClick}
-          className="flex min-w-[220px] items-center gap-3 rounded-full border border-white/50 bg-white/90 px-3 py-2 text-left shadow-sm transition hover:border-accent hover:text-accent dark:border-white/20 dark:bg-white/10"
+          className="flex min-w-[220px] items-center gap-3 rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-2 text-left shadow-[0_12px_35px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_12px_35px_rgba(0,0,0,0.2)]"
         >
           <span className="text-xl" role="img" aria-hidden="true">
             {weatherSummary?.icon ?? '⛅️'}
@@ -105,7 +145,7 @@ function App() {
             <p className="text-xs uppercase tracking-[0.28em] text-slate-500 dark:text-white/60">
               Weather
             </p>
-            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+            <p className="truncate text-sm font-semibold text-[#0F172A] dark:text-[#F1F5F9]">
               {weatherSummary
                 ? `${weatherSummary.location} · ${weatherSummary.temperature}`
                 : 'Loading forecast…'}
@@ -122,7 +162,7 @@ function App() {
           onClick={() => setSettingsOpen(true)}
           aria-label="Open settings"
           title="Open settings"
-          className="h-9 w-9 rounded-full border-slate-200 bg-white/80 text-lg text-slate-700 shadow-sm hover:border-accent hover:text-accent dark:border-white/20 dark:bg-white/10 dark:text-white"
+          className="h-9 w-9 rounded-[10px] border-[#E2E8F0] bg-white/70 text-lg text-[#0F172A] shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[1px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:text-[#F1F5F9] dark:shadow-[0_10px_25px_rgba(0,0,0,0.2)]"
         >
           ⚙️
         </Button>
@@ -130,15 +170,81 @@ function App() {
     </header>
   );
 
+  const commandItems: CommandItem[] = useMemo(() => {
+    const linkItems: CommandItem[] = favorites.map((link) => ({
+      id: `link-${link.label}`,
+      label: link.label,
+      description: link.description,
+      href: link.url,
+      keywords: ['bookmark', 'link']
+    }));
+
+    const gitlabCommands: CommandItem[] = [
+      {
+        id: 'gitlab-assigned',
+        label: 'GitLab: Assigned merge requests',
+        description: 'Open your assigned MRs dashboard',
+        href: buildGitLabFilterUrl({})
+      },
+      {
+        id: 'gitlab-conflicts',
+        label: 'GitLab: Conflicts',
+        description: 'MRs with conflicts',
+        href: buildGitLabFilterUrl({ with_merge_status_recheck: 'true' }),
+        badge: 'conflicts'
+      },
+      {
+        id: 'gitlab-stale',
+        label: 'GitLab: Stale >48h',
+        description: 'Older assigned MRs',
+        href: buildGitLabFilterUrl({ updated_before: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString() })
+      },
+      ...gitlabHighlights.map((highlight) => ({
+        id: `mr-${highlight.url ?? highlight.title}`,
+        label: highlight.title,
+        description: highlight.meta,
+        href: highlight.url,
+        keywords: ['mr', 'merge', 'request', ...(highlight.tags ?? [])],
+        badge: highlight.badge
+      }))
+    ];
+
+    const weatherCommands: CommandItem[] = [
+      {
+        id: 'weather-toggle-on',
+        label: 'Show detailed weather',
+        description: 'Expand the multi-day view',
+        action: () => {
+          setDetailedWeather(true);
+          weatherSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      },
+      {
+        id: 'weather-toggle-off',
+        label: 'Hide detailed weather',
+        action: () => setDetailedWeather(false)
+      }
+    ];
+
+    return [...linkItems, ...gitlabCommands, ...weatherCommands];
+  }, [favorites, gitlabHighlights, setDetailedWeather, weatherSectionRef]);
+
+  const webSearchFallbackLabel = paletteQuery.trim()
+    ? `Search web for “${paletteQuery.trim()}”`
+    : null;
+  const webSearchFallback = paletteQuery.trim()
+    ? () => window.open(`https://duckduckgo.com/?q=${encodeURIComponent(paletteQuery.trim())}`, '_blank')
+    : null;
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#e2e8ff,_#f8fafc_45%)] px-4 py-5 text-slate-900 dark:bg-[radial-gradient(circle_at_top,_#050816,_#0f172a_55%)] dark:text-white">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#eef2f8,_#f7f9fc_55%)] px-4 py-5 text-[#0F172A] dark:bg-[radial-gradient(circle_at_top,_#0b1221,_#0f172a_55%)] dark:text-[#F1F5F9]">
       <div className="mx-auto flex max-w-6xl flex-col gap-4">
         {topBar}
 
         <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-4">
-            <SearchBar />
-            <StatusBoard />
+            <SearchBar autoFocus={false} />
+            <StatusBoard onHighlightsChange={setGitlabHighlights} />
           </div>
           <div className="space-y-4">
             <div ref={weatherSectionRef}>
@@ -150,11 +256,36 @@ function App() {
                 timeZone={resolvedTimeZone}
               />
             </div>
-            <PersonalNewsCard />
+            <BookmarksCard links={favorites} />
           </div>
         </div>
 
         <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)}>
+          <section className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-white">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-100">Display name</p>
+                  <p className="text-xs text-slate-400">Personalize the greeting in the header.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDisplayName('Casper')}
+                  className="text-xs text-white/70 hover:text-accent"
+                >
+                  Reset
+                </Button>
+              </div>
+              <Input
+                value={displayName ?? ''}
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="e.g. Casper"
+                className="border-white/20 bg-white/5 text-white placeholder:text-white/30"
+              />
+            </div>
+          </section>
           <section className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-white">
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-4">
@@ -218,6 +349,16 @@ function App() {
             </div>
           </section>
         </SettingsModal>
+
+        <CommandPalette
+          open={paletteOpen}
+          query={paletteQuery}
+          onQueryChange={setPaletteQuery}
+          onClose={() => setPaletteOpen(false)}
+          commands={commandItems}
+          fallbackLabel={webSearchFallbackLabel}
+          fallbackAction={webSearchFallback}
+        />
       </div>
     </div>
   );
@@ -229,36 +370,46 @@ type LinkConfig = {
   label: string;
   description: string;
   url: string;
+  category?: string;
 };
 
-const quickLinkGroups: Record<'personal' | 'news', string[]> = {
-  personal: ['YNAB', 'ChatGPT', 'Gmail', 'Outlook', 'Home Assistant'],
-  news: ['Tweakers', 'NU.nl', 'GitLab']
+const defaultCategoryByLabel: Record<string, string> = {
+  YNAB: 'Personal',
+  ChatGPT: 'Personal',
+  Gmail: 'Personal',
+  Outlook: 'Personal',
+  'Home Assistant': 'Personal',
+  Tweakers: 'News',
+  'NU.nl': 'News',
+  GitLab: 'Work',
+  Jira: 'Work'
 };
 
-function PersonalNewsCard() {
-  const [tab, setTab] = useState<'personal' | 'news'>('personal');
-  const favorites: LinkConfig[] = linksConfig as LinkConfig[];
-  const activeLinks = favorites.filter((link) => quickLinkGroups[tab].includes(link.label));
+function BookmarksCard({ links }: { links: LinkConfig[] }) {
+  const categories = Array.from(
+    new Set(links.map((link) => link.category ?? 'General'))
+  );
+  const [tab, setTab] = useState<string>(categories[0] ?? 'General');
+  const activeLinks = links.filter((link) => (link.category ?? 'General') === tab);
 
   return (
-    <Card className="border border-white/40 bg-white/85 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-black/20">
+    <Card className="border border-[#E2E8F0] bg-white/70 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_12px_35px_rgba(0,0,0,0.25)] rounded-[14px]">
       <CardHeader className="flex flex-col gap-3 pb-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <CardTitle className="text-base">Personal / News</CardTitle>
-            <CardDescription className="text-xs">Jump to daily essentials or headlines.</CardDescription>
+            <CardTitle className="text-base text-[#0F172A] dark:text-[#F1F5F9]">Bookmarks</CardTitle>
+            <CardDescription className="text-xs text-slate-500 dark:text-slate-400">Tabs follow your link categories.</CardDescription>
           </div>
-          <div className="flex rounded-full border border-white/40 bg-white/70 p-1 text-xs dark:border-white/15 dark:bg-white/10">
-            {(['personal', 'news'] as const).map((key) => (
+          <div className="flex rounded-full border border-[#E2E8F0] bg-white/80 p-1 text-xs dark:border-[#334155] dark:bg-[#1E293B]">
+            {categories.map((key) => (
               <Button
                 key={key}
                 type="button"
                 size="sm"
                 variant={tab === key ? 'default' : 'ghost'}
                 onClick={() => setTab(key)}
-                className={`h-8 rounded-full px-3 text-[11px] capitalize ${
-                  tab === key ? 'bg-accent text-white shadow-sm' : 'text-slate-600 dark:text-white/70'
+                className={`h-8 rounded-[10px] px-3 text-[11px] capitalize transition ${
+                  tab === key ? 'bg-[#3A7AFE] text-white shadow-sm' : 'text-slate-600 hover:text-[#3A7AFE] dark:text-white/70'
                 }`}
               >
                 {key}
@@ -274,9 +425,9 @@ function PersonalNewsCard() {
             href={link.url}
             target="_blank"
             rel="noreferrer"
-            className="group rounded-2xl border border-white/50 bg-white/90 px-3 py-3 text-sm shadow-sm transition hover:border-accent hover:text-accent dark:border-white/10 dark:bg-white/10"
+            className="group rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-3 text-sm shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_10px_25px_rgba(0,0,0,0.18)]"
           >
-            <p className="font-semibold text-slate-900 transition group-hover:text-accent dark:text-white">
+            <p className="font-semibold text-[#0F172A] transition group-hover:text-[#3A7AFE] dark:text-[#F1F5F9]">
               {link.label}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-300">{link.description}</p>
@@ -284,7 +435,7 @@ function PersonalNewsCard() {
         ))}
         {!activeLinks.length && (
           <p className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-xs text-slate-500 dark:border-white/10 dark:text-slate-300">
-            Add more {tab === 'personal' ? 'personal' : 'news'} bookmarks in config/links.json.
+            Add more {tab.toLowerCase()} bookmarks in config/links.json (set "category").
           </p>
         )}
       </CardContent>

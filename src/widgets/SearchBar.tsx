@@ -21,19 +21,26 @@ type LinkConfig = {
   label: string;
   description: string;
   url: string;
+  category?: string;
 };
 
 const favoriteLinks: LinkConfig[] = linksConfig as LinkConfig[];
 
-export function SearchBar() {
+type SearchBarProps = {
+  autoFocus?: boolean;
+};
+
+export function SearchBarInner({ autoFocus = true }: SearchBarProps) {
   const [engine, setEngine] = useState(providers[0]);
   const [query, setQuery] = useState('');
   const [showAll, setShowAll] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (autoFocus) {
+      inputRef.current?.focus();
+    }
+  }, [autoFocus]);
 
   const normalizedQuery = query.trim().toLowerCase();
   const filteredLinks = normalizedQuery
@@ -69,14 +76,14 @@ export function SearchBar() {
   };
 
   return (
-    <Card className="border border-white/40 bg-white/85 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-black/30">
-      <CardHeader className="space-y-1 pb-3">
-        <CardTitle className="text-lg">Search & Links</CardTitle>
-        <CardDescription className="text-xs">
+    <Card className="rounded-[14px] border border-[#E2E8F0] bg-white/70 shadow-[0_12px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_12px_35px_rgba(0,0,0,0.25)]">
+      <CardHeader className="space-y-1 pb-2">
+        <CardTitle className="text-lg text-[#0F172A] dark:text-[#F1F5F9]">Search & Links</CardTitle>
+        <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
           Type to filter bookmarks; if nothing matches, jump to your search engine.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         <form
           onSubmit={handleSubmit}
           className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
@@ -89,7 +96,7 @@ export function SearchBar() {
                 if (selected) setEngine(selected);
               }}
             >
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full rounded-[10px] border-[#E2E8F0] sm:w-[180px] dark:border-[#334155]">
                 <SelectValue placeholder="Search provider" />
               </SelectTrigger>
               <SelectContent>
@@ -102,12 +109,15 @@ export function SearchBar() {
             </Select>
             <Input
               ref={inputRef}
-              className="w-full flex-1 rounded-xl"
+              className="w-full flex-1 rounded-[10px] border-[#E2E8F0] bg-white/70 backdrop-blur-sm placeholder:text-slate-400 transition focus:border-[#3A7AFE] focus:ring-2 focus:ring-[#3A7AFE]/30 dark:border-[#334155] dark:bg-[#1E293B]/80"
               placeholder={`Search ${engine.label}`}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
-            <Button type="submit" className="w-full sm:w-[140px]">
+            <Button
+              type="submit"
+              className="w-full rounded-[10px] bg-[#3A7AFE] text-white shadow-sm hover:bg-[#3166d4] sm:w-[140px]"
+            >
               Open match
             </Button>
           </div>
@@ -115,7 +125,7 @@ export function SearchBar() {
             <Button
               type="button"
               variant="outline"
-              className="w-full justify-start text-left text-sm text-slate-600 hover:text-accent dark:text-slate-200"
+              className="w-full justify-start rounded-[10px] border-[#E2E8F0] text-left text-sm text-slate-600 transition hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:text-slate-200"
               onClick={handleWebSearch}
             >
               Search {engine.label} for “{query}”
@@ -143,9 +153,11 @@ export function SearchBar() {
                 href={link.url}
                 target="_blank"
                 rel="noreferrer"
-                className="group rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm transition hover:border-accent hover:bg-white dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10"
+                className="group rounded-[14px] border border-[#E2E8F0] bg-white/70 px-3 py-2.5 text-sm shadow-[0_10px_25px_rgba(15,23,42,0.08)] backdrop-blur-lg transition hover:-translate-y-[2px] hover:border-[#3A7AFE] hover:text-[#3A7AFE] dark:border-[#334155] dark:bg-[#1E293B]/80 dark:shadow-[0_10px_25px_rgba(0,0,0,0.18)]"
               >
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">{link.label}</p>
+                <p className="text-sm font-semibold text-[#0F172A] transition group-hover:text-[#3A7AFE] dark:text-[#F1F5F9]">
+                  {link.label}
+                </p>
                 <p className="text-xs text-slate-500 dark:text-slate-300">{link.description}</p>
               </a>
             ))}
