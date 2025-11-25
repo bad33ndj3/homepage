@@ -25,7 +25,8 @@ No backend, no server process. Everything runs as static HTML/CSS/JS in the brow
 - Dark theme applies the Tailwind `dark` class on `<html>` and uses `from-slate-950 via-slate-900 to indigo-950` gradients with matching frosted cards.
 - Utility classes keep widgets compact (rounded geometry, backdrop blur) while remaining responsive with flex/grid layouts.
 - Quick links/bookmarks support categories as tabs; Command Palette surfaces bookmarks and GitLab MRs.
-- Current layout: slim top bar (time/date/greeting + weather pill) → merged search/link widget → GitLab focus card → weather + bookmarks column; optimized for a 14" MacBook Pro viewport.
+- Current layout: compact header (time/date/greeting + integrated search button with ⌘K hint + weather pill) → GitLab focus card (primary, full-height) → weather + bookmarks column; optimized for mobile-first with enhanced responsiveness.
+- Search functionality unified through Command Palette (⌘K or /) - no separate search widget, cleaner UI with more space for GitLab content.
 
 ## Output
 - `dist/` contains only `index.html`, `*.js`, and `*.css`.

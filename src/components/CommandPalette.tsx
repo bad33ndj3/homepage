@@ -113,9 +113,9 @@ export function CommandPalette({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 px-4 py-16 backdrop-blur-sm">
-      <div className="w-full max-w-2xl overflow-hidden rounded-[16px] border border-white/50 bg-white/70 shadow-[0_24px_60px_rgba(15,23,42,0.25)] backdrop-blur-2xl dark:border-white/20 dark:bg-[#0f172a]/70 dark:shadow-[0_30px_70px_rgba(0,0,0,0.45)]">
-        <div className="flex items-center gap-3 border-b border-white/50 bg-white/60 px-4 py-3 text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 px-4 py-16 backdrop-blur-md dark:bg-black/60">
+      <div className="w-full max-w-2xl overflow-hidden rounded-[20px] border border-white/40 bg-white/50 shadow-[0_24px_60px_rgba(31,38,135,0.3)] backdrop-blur-2xl backdrop-saturate-150 dark:border-white/20 dark:bg-black/50 dark:shadow-[0_30px_70px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center gap-3 border-b border-white/30 bg-white/30 px-4 py-3 text-sm text-slate-600 backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:text-slate-200">
           <Input
             ref={inputRef}
             placeholder="Quick command or search…"

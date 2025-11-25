@@ -11,10 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { CommandPalette, type CommandItem } from './components/CommandPalette';
-import { SearchBarInner as SearchBar } from './widgets/SearchBar';
 import { StatusBoard, buildGitLabFilterUrl, type StatusHighlight } from './widgets/StatusBoard';
 import { WeatherBadge, type WeatherSummary } from './widgets/WeatherBadge';
 import { SettingsModal } from './components/SettingsModal';
+import { GlassBackground } from './components/GlassBackground';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import linksConfig, { type LinkConfig } from './config/links';
 import personalizationConfig, { type WeatherLocationConfig } from './config/personalization';
@@ -59,6 +59,7 @@ function App() {
   const [gitlabHighlights, setGitlabHighlights] = useState<StatusHighlight[]>([]);
   const [displayName, setDisplayName] = useLocalStorage<string | null>('homebase-display-name', DEFAULT_DISPLAY_NAME);
   const [timeZoneSetting, setTimeZoneSetting] = useLocalStorage('homebase-timezone', SYSTEM_TIME_ZONE);
+  const [backgroundTheme, setBackgroundTheme] = useLocalStorage('homebase-background', 'forest');
   const normalizedTimeZone = (timeZoneSetting ?? '').trim() || SYSTEM_TIME_ZONE;
   const resolvedTimeZone = useMemo(() => {
     try {
@@ -162,22 +163,37 @@ function App() {
   };
 
   const topBar = (
-    <header className="rounded-[20px] border border-white/45 bg-white/55 px-6 py-8 shadow-[0_20px_55px_rgba(15,23,42,0.12)] backdrop-blur-2xl transition-colors dark:border-white/10 dark:bg-white/5 dark:shadow-[0_24px_55px_rgba(0,0,0,0.55)]">
-      <div className="grid items-center gap-8 text-left lg:grid-cols-[1.1fr_auto_1fr]">
-        <div className="space-y-3">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
-            {dateLabel}
-          </p>
-          <p className="text-3xl font-semibold leading-tight text-[#0F172A] dark:text-[#F1F5F9]">
-            Hi {greetingName}
-          </p>
-          <p className="text-base text-slate-500 dark:text-slate-300">{greeting}</p>
-        </div>
-        <div className="relative flex flex-col items-center justify-center text-center sm:items-center">
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="relative h-[clamp(7rem,14vw,9rem)] w-[clamp(7rem,14vw,9rem)] rounded-full border border-white/70 bg-white/35 shadow-[0_30px_80px_rgba(59,130,246,0.35)] backdrop-blur-2xl before:absolute before:inset-[-25%] before:-z-10 before:rounded-full before:bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.3),transparent_65%)] dark:border-white/30 dark:bg-white/10 dark:shadow-[0_30px_80px_rgba(15,23,42,0.8)]" />
+    <header className="group rounded-[20px] border border-white/40 bg-white/40 px-6 py-4 shadow-[0_8px_32px_rgba(31,38,135,0.2)] backdrop-blur-2xl backdrop-saturate-150 transition-all hover:border-white/50 hover:bg-white/50 dark:border-white/20 dark:bg-black/40 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+      <div className="grid items-center gap-4 text-left lg:grid-cols-[1fr_auto_1fr]">
+        <div className="space-y-2.5">
+          <div className="space-y-1.5">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
+              {dateLabel}
+            </p>
+            <p className="text-xl font-semibold leading-tight text-[#0F172A] dark:text-[#F1F5F9]">
+              Hi {greetingName}
+            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-300">{greeting}</p>
           </div>
-          <div className="relative flex items-baseline justify-center gap-3 font-mono text-[clamp(3rem,10vw,6rem)] leading-none tracking-tight text-[#0F172A] dark:text-[#F1F5F9]">
+          <button
+            type="button"
+            onClick={() => {
+              setPaletteOpen(true);
+              setPaletteQuery('');
+            }}
+            className="inline-flex items-center gap-2.5 rounded-xl border border-white/40 bg-white/30 px-4 py-2 text-sm shadow-[0_4px_16px_rgba(31,38,135,0.15)] backdrop-blur-xl backdrop-saturate-150 transition-all hover:border-[#3A7AFE]/60 hover:bg-white/40 hover:shadow-[0_8px_20px_rgba(58,122,254,0.25)] active:scale-[0.98] dark:border-white/20 dark:bg-black/30 dark:hover:border-[#3A7AFE]/50 dark:hover:bg-black/40"
+          >
+            <svg className="h-4 w-4 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span className="font-medium text-slate-700 dark:text-slate-200">Quick search</span>
+            <div className="ml-auto flex items-center gap-1">
+              <kbd className="rounded-md border border-white/40 bg-white/50 px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-600 shadow-sm dark:border-white/20 dark:bg-white/10 dark:text-slate-300">⌘K</kbd>
+            </div>
+          </button>
+        </div>
+        <div className="relative flex flex-col items-center justify-center text-center">
+          <div className="relative flex items-baseline justify-center gap-2 font-mono text-[clamp(2rem,6vw,3.5rem)] leading-none tracking-tight text-[#0F172A] dark:text-[#F1F5F9]">
             <span
               className="tabular-nums"
               style={{
@@ -189,7 +205,7 @@ function App() {
               {timeParts.hoursMinutes}
             </span>
             <span
-              className={`tabular-nums text-[clamp(1.5rem,4vw,2.5rem)] text-slate-500 transition-all duration-150 ease-linear ${
+              className={`tabular-nums text-[clamp(1rem,2.5vw,1.5rem)] text-slate-500 transition-all duration-150 ease-linear ${
                 secondsPulse ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-60'
               }`}
             >
@@ -207,21 +223,18 @@ function App() {
               handleWeatherPillClick();
             }
           }}
-          className="group flex cursor-pointer flex-col items-end gap-1 pr-2 text-right transition hover:text-[#3A7AFE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3A7AFE]/40"
+          className="group flex cursor-pointer flex-col items-end gap-1 text-right transition hover:text-[#3A7AFE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3A7AFE]/40"
         >
-          <div className="flex items-center gap-2 text-sm uppercase tracking-[0.35em] text-slate-500 dark:text-slate-300">
-            <span className="text-2xl" role="img" aria-hidden="true">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300">
+            <span className="text-xl" role="img" aria-hidden="true">
               {weatherIcon}
             </span>
-            <span>{weatherLocationLabel}</span>
+            <span className="hidden sm:inline">{weatherLocationLabel}</span>
           </div>
-          <p className="text-[clamp(1.8rem,4vw,2.8rem)] font-semibold leading-none text-[#0F172A] transition group-hover:text-[#3A7AFE] dark:text-[#F1F5F9]">
+          <p className="text-[clamp(1.5rem,3vw,2rem)] font-semibold leading-none text-[#0F172A] transition group-hover:text-[#3A7AFE] dark:text-[#F1F5F9]">
             {weatherTemperatureLabel}
           </p>
-          <p className="text-sm text-slate-500 dark:text-slate-300">{weatherSecondaryLine}</p>
-          <p className="mt-2 text-[11px] uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
-            {weatherTertiaryLine}
-          </p>
+          <p className="hidden text-xs text-slate-500 sm:block dark:text-slate-300">{weatherSecondaryLine}</p>
         </div>
       </div>
     </header>
@@ -296,17 +309,17 @@ function App() {
   return (
     <div
       data-theme={resolvedTheme}
-      className="min-h-screen bg-[radial-gradient(circle_at_top,_#eef2f8,_#f7f9fc_55%)] px-4 py-5 text-[#0F172A] dark:bg-[radial-gradient(circle_at_top,_#0b1221,_#0f172a_55%)] dark:text-[#F1F5F9]"
+      className="relative min-h-screen overflow-hidden px-4 py-5 text-[#0F172A] dark:text-[#F1F5F9]"
     >
-      <div className="mx-auto flex max-w-6xl flex-col gap-8">
+      <GlassBackground themeKey={backgroundTheme} />
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-8 xl:max-w-7xl 2xl:max-w-[1600px]">
         {topBar}
 
-        <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-          <div className="space-y-6">
-            <SearchBar autoFocus={false} />
+        <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr] 2xl:grid-cols-[1.2fr_1fr]">
+          <div className="order-1">
             <StatusBoard onHighlightsChange={setGitlabHighlights} />
           </div>
-          <div className="space-y-6">
+          <div className="order-2 space-y-6">
             <div ref={weatherSectionRef}>
               <WeatherBadge
                 expanded={detailedWeather}
@@ -332,8 +345,14 @@ function App() {
           </div>
         </div>
 
-        <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} theme={theme}>
-          <section className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-white">
+        <SettingsModal
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          theme={theme}
+          backgroundTheme={backgroundTheme}
+          onBackgroundChange={setBackgroundTheme}
+        >
+          <section className="rounded-xl border border-white/20 bg-white/10 px-4 py-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -457,7 +476,7 @@ function BookmarksCard({ links }: { links: LinkConfig[] }) {
   const activeLinks = links.filter((link) => (link.category ?? 'General') === activeTab);
 
   return (
-    <Card className="rounded-[16px] border border-white/45 bg-white/60 shadow-[0_20px_55px_rgba(15,23,42,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5">
+    <Card className="group rounded-[20px] border border-white/40 bg-white/40 shadow-[0_8px_32px_rgba(31,38,135,0.2)] backdrop-blur-2xl backdrop-saturate-150 transition-all hover:border-white/50 hover:bg-white/50 dark:border-white/20 dark:bg-black/40 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
       <CardHeader className="flex flex-col gap-4 pb-0 pt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -489,7 +508,7 @@ function BookmarksCard({ links }: { links: LinkConfig[] }) {
       <CardContent className="pt-4">
         <div
           key={activeTab}
-          className="grid gap-2 sm:grid-cols-2 animate-in fade-in duration-300 slide-in-from-top-2"
+          className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3 animate-in fade-in duration-300 slide-in-from-top-2"
         >
           {activeLinks.map((link) => (
             <a

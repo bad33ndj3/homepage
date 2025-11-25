@@ -330,7 +330,7 @@ export function WeatherBadge({
   return (
     <Card
       className={cn(
-        'rounded-[20px] border border-white/50 bg-white/65 text-[#0F172A] shadow-[0_28px_65px_rgba(15,23,42,0.16)] backdrop-blur-2xl transition-colors dark:border-white/10 dark:bg-white/5 dark:text-[#F1F5F9]',
+        'group rounded-[20px] border border-white/40 bg-white/40 text-[#0F172A] shadow-[0_8px_32px_rgba(31,38,135,0.2)] backdrop-blur-2xl backdrop-saturate-150 transition-all hover:border-white/50 hover:bg-white/50 dark:border-white/20 dark:bg-black/40 dark:text-[#F1F5F9] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
         className
       )}
     >
